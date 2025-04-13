@@ -1,0 +1,172 @@
+[
+  {
+    "name": "Coprehensive XSS (A) Common Entry Points",
+    "level": "medium",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)(<script.*?>.*?</script>)|((javascript:|data:text\\/html|vbscript:)[^\\s]+)|(<[a-z]+\\s+[^>]*?(on\\w+|style\\s*=\\s*\\\".*?expression\\(.*?\\)).*?>)|(\\b(on\\w+)\\s*=\\s*\\\"[^\\\"]*?\\\")|(<[a-z]+[^>]*?href\\s*=\\s*\\\"javascript:[^\\\"]*?\\\")",
+    "action": "maskblock"
+  },
+
+  {
+    "name": "Generic Non-printable Characters",
+    "level": "medium",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]",
+    "action": "drop"
+  },
+  {
+    "name": "Generic File Traversal (A)",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "/(\\.\\./|\\./|~\\/|/\\.\\./|\\\\\\.\\.|\\.\\\\|\\\\\\/|\\/\\.\\\\)/",
+    "action": "maskblock"
+  },
+  {
+    "name": "Generic File Traversal (C)",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "\\.\\.\\/|\\/\\.\\./",
+    "action": "maskblock"
+  },
+  {
+    "name": "Generic SQL Injection",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "\\b(?:SELECT|INSERT INTO|UPDATE|DELETE FROM|DROP TABLE|ALTER TABLE|CREATE TABLE|UNION(?: ALL)?|FROM|WHERE|AND|OR|JOIN|HAVING|WAITFOR|DELAY)\\b",
+    "action": "maskblock"
+  },
+  {
+    "name": "Generic SQL Injection (A)",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "SELECT|FROM|WHERE|UPDATE|DELETE|INSERT INTO|VALUES|CREATE TABLE|ALTER TABLE|DROP TABLE|JOIN|INNER JOIN|LEFT JOIN|RIGHT JOIN|ON|GROUP BY|ORDER BY|HAVING",
+    "action": "maskblock"
+  },
+  {
+    "name": "WordPress Enumeration (A) -> Uploads",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "\\/wp-content\\/uploads\\/[0-9]{4}\\/[0-9]{2}\\/[a-zA-Z0-9\\-_]+\\.(?:php|txt|html|htm|js|css|png|jpg|jpeg|gif|bmp|ico|svg|ttf|woff|woff2|eot|otf|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|tar|gz|7z|exe|bin|mp3|mp4|wav|avi|mkv|mov|flv|wmv|apk|iso|img|dmg|torrent)\\/",
+    "action": "maskblock"
+  },
+  {
+    "name": "WordPress Enumeration (B) -> Themes",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "\\/wp-content\\/themes\\/[a-zA-Z0-9\\-_]+\\/",
+    "action": "maskblock"
+  },
+  {
+    "name": "Generic WordPress Enumeration",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "wp-(?:login|admin|includes|content|config|cron|trackback|register|comments|feed|wp-activate|wp-blog-header|wp-comments-post|wp-links-opml|wp-mail|wp-settings|wp-signup|wp-trackback|xmlrpc).php",
+    "action": "maskblock"
+  },
+  {
+    "name": "Generic WordPress Enumeration (A)",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "wp-(?:login|admin|includes|content|config|cron|trackback|register|comments|feed|wp-activate|wp-blog-header|wp-comments-post|wp-links-opml|wp-mail|wp-settings|wp-signup|wp-trackback|xmlrpc)",
+    "action": "maskblock"
+  },
+  {
+    "name": "Generic Hack Tool (A) -> SQLMap",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "sqlmap|sqlmapapi|sqlmapapi.py",
+    "action": "drop"
+  },
+  {
+    "name": "Generic Hack Tool (B) -> WPScan",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "wpscan|wpscan.rb|wpscan-",
+    "action": "drop"
+  },
+  {
+    "name": "Generic Hack Tool (C) -> DirBuster",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "dirbuster|dirbuster-",
+    "action": "drop"
+  },
+  {
+    "name": "Generic Admin Enumeration (A)",
+    "level": "medium",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "admin(?:istrator)?|login|wp-(?:login|admin|includes|content|config|cron|trackback|register|comments|feed|wp-activate|wp-blog-header|wp-comments-post|wp-links-opml|wp-mail|wp-settings|wp-signup|wp-trackback|xmlrpc)",
+    "action": "drop"
+  },
+  {
+    "name": "CVE-2014-6271 -> Shellshock",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "\\( *\\) *\\{ *: *; *\\}",
+    "action": "drop"
+  },
+  {
+    "name": "CVE-2020-5902 -> F5 BIG-IP",
+    "level": "high",
+    "section": [
+      "headers",
+      "body",
+      "url"
+    ],
+    "regex": "tmui|tmsh",
+    "action": "drop"
+  }
+  
+]
