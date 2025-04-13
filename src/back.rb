@@ -158,6 +158,7 @@ class HoneySet
       :body => nil,
       :params => {},
       :host => socket.peeraddr[2], # Get the IP address of the client
+      :timestamp => Time.now.to_s
     }
     begin
       raw = data.split("\r\n")
