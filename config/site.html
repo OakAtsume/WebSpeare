@@ -50,11 +50,60 @@
 </head>
 <body>
 
+  <!-- 
+    Oak Atsume was here
+  -->
   <h1>{{TITLE}}</h1>
 
   <div class="body">
     <p>{{POEM}}</p>
     
+  </div>
+
+
+  <div>
+    <h2>Member Login</h2>
+    <form action="/login" method="post">
+      <label>Username:</label><br>
+      <input type="text" name="username"><br><br>
+      <label>Password:</label><br>
+      <input type="password" name="password"><br><br>
+      <input type="submit" value="Login">
+    </form>  
+  </div>
+
+  <div>
+    <h2>Administrator Login</h2>
+    <form action="/admin" method="post">
+      <label>Email:</label><br>
+      <input type="email" name="email"><br><br>
+      <label>Password:</label><br>
+      <input type="password" name="password"><br><br>
+      <input type="submit" value="Access Panel">
+    </form>
+    
+  </div>
+
+  <div>
+    <h2>Employee Login</h2>
+    <form action="/intranet" method="post">
+      <label>Employee ID:</label><br>
+      <input type="text" name="empid"><br><br>
+      <label>Password:</label><br>
+      <input type="password" name="password"><br><br>
+      <input type="submit" value="Sign In">
+    </form>
+  </div>
+
+  
+
+  <div>
+    <h2>Search for </h2>
+    <form action="/search" method="get">
+      <label>Search for </label><br>
+      <input type="text" name="query"><br>
+      <input type="submit" value="Search"><br>
+    </form>
   </div>
 
   <footer>
