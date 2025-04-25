@@ -28,7 +28,7 @@ def randomWrap(text, inserts,params, strings)
     elsif word.match?(/\w/) && rand < 0.25
       "<a href=\"#{inserts.sample}?#{params.sample}=#{inserts.sample}\">#{word}</a>"
     elsif word.match?(/\w/) && rand < 0.15
-      "#{word} #{strings.sample}"
+      "#{word} <!-- #{strings.sample} -->"
     else
       word
     end
