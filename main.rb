@@ -54,6 +54,7 @@ server.on(:request) do |id, socket, request|
       server.mimeFor(".html")
     )
   )
+  
 
   record.log(
     level: :http,

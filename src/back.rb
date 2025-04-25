@@ -188,6 +188,7 @@ class HoneySet
         request[:path], request[:params] = request[:path].split("?")
         request[:params] = URI.decode_www_form(request[:params]).to_h
       end
+      request[:timestamp] = Time.now.to_i
       return request
     rescue => e
       emit(:error, @id, socket, e) # Emit error event
