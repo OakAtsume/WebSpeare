@@ -1,0 +1,20 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8081
+  },
+  "waf": {
+    "rules": "config/waf/rules.json"
+  },
+  "web": {
+    "poems": "config/poems.json",
+    "baits": "config/baits.json",
+    "page": "config/site.html"
+  },
+  "logs": {
+    "timeformat": "%H:%M:%S",
+    "fileformat": "%Y-%m-%d",
+    "textpath": "logs/",
+    "jsonpath": "logs/json/"
+  }
+}

@@ -7,16 +7,42 @@ require("uri")
 
 require_relative("src/back.rb")
 require_relative("src/log.rb")
-server = HoneySet.new(
-  waf: JSON.parse(File.read("config/waf/rules.json")),
-  port: 8081,
-  host: "0.0.0.0"
-)
-randomText = JSON.parse(File.read("config/poems.json"))
-baits = JSON.parse(File.read("config/baits.json"))
-page = File.read("config/site.html")
 
-record = Log4Web.new(logs: "logs/")
+config = JSON.parse(File.read("config/config.json"))
+
+
+server = HoneySet.new(
+  waf: JSON.parse(File.read(config["waf"]["rules"])),
+  host: config["server"]["host"],
+  port: config["server"]["port"]
+)
+
+randomText = JSON.parse(File.read(
+  config["web"]["poems"]
+))
+baits = JSON.parse(File.read(
+  config["web"]["baits"]
+))
+page = File.read(
+  config["web"]["page"]
+)
+# def initialize(textlogs, jsonlogs, timeformat, fileformat)
+record = Log4Web.new(
+  config["logs"]["textpath"],
+  config["logs"]["jsonpath"],
+  config["logs"]["timeformat"],
+  config["logs"]["fileformat"]
+)
+
+# server = HoneySet.new(
+#   waf: JSON.parse(File.read("config/waf/rules.json")),
+#   port: 8081,
+#   host: "0.0.0.0"
+# )
+# randomText = JSON.parse(File.read("config/poems.json"))
+# baits = JSON.parse(File.read("config/baits.json"))
+# page = File.read("config/site.html")
+# record = Log4Web.new(logs: "logs/")
 
 
 def randomWrap(text, inserts,params, strings)
@@ -104,7 +130,7 @@ server.on(:error) do |id, socket, error|
     socket.write(
       server.reply(
         400, # Bad Request
-        "Invalid request lol",
+        "Invalid reques!",
         server.mimeFor(".html"),
       )
     )

@@ -1,20 +1,23 @@
 require("json")
 class Log4Web
-  def initialize(logs: "logs/")
-    @logs = logs
+  def initialize(textlogs, jsonlogs, timeformat, fileformat)
+    @logs = textlogs
+    @json = jsonlogs
+    @timeformat = timeformat
+    @fileformat = fileformat
   end
 
   def reqLogs(req)
     req = JSON.generate(req)
-    logs = File.open("#{@logs}/honey.json", "a")
+    logs = File.open("#{@json}/#{Time.now.strftime(@fileformat)}.json", "a")
     logs.write("#{req}\n")
     logs.close
   end
 
   def log(level: :info, message: "", code: nil)
-    timestamp = Time.now.strftime("%H:%M:%S")
+    timestamp = Time.now.strftime(@timeformat)
     # Write to File
-    File.open(@logs + Time.now.strftime("%Y-%m-%d") + ".log", "a") do |f|
+    File.open(@logs + Time.now.strftime(@fileformat) + ".log", "a") do |f|
       f.puts("[#{timestamp}] [#{level.to_s.upcase}] #{message}")
       if code
         f.puts("  #{code}")
