@@ -64,6 +64,20 @@ end
 record.log(level: :info, message: "Server started on #{server.con[:host]}:#{server.con[:port]}")
 
 server.on(:request) do |id, socket, request|
+
+  if request[:path] == "/.well-known/security.txt" && config["security-txt"]["enabled"]
+    msg = config["security-txt"]["msg"].join("\n")
+    socket.write(
+      server.reply(
+        200,
+        msg,
+        server.mimeFor(".txt")
+      )
+    )
+    next
+  end
+  
+
   # Handle robots.txt
   begin
     if request[:path].include?("/robots.txt")
@@ -151,6 +165,20 @@ server.on(:waf) do |id, socket, request, rule, data|
   if request[:path] == "/"
     request[:path] = "index.html"
   end
+
+  if request[:path] == ".well-known/security.txt" && config["security-txt"]["enabled"]
+    msg = config["security-txt"]["msg"].join("\n")
+    socket.write(
+      server.reply(
+        200,
+        msg,
+        server.mimeFor(".html")
+      )
+    )
+    next
+  end
+
+
 
   code = baits["return-shifter"]["default"]
 

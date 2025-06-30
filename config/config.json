@@ -16,5 +16,19 @@
     "fileformat": "%Y-%m-%d",
     "textpath": "logs/",
     "jsonpath": "logs/json/"
+  },
+  "security-txt": {
+    "enabled": true,
+    "msg": [
+      "# security.txt",
+      "Contact: mailto:yvvq28ql4@mozmail.com",
+      "Discord: @OakAtsume",
+      "Preferred-Languages: en, es",
+      "# 🎉 Hey there, friend!",
+      "# Looks like you were looking for the responsible disclosure path — and we love that. ❤️",
+      "# This is actually a honeypot, but you're one of the good ones — no worries, we won’t report you or blacklist you.",
+      "# In fact, thanks for being awesome and taking the high road.",
+      "# Feel free to say hi if you want — we like cool hackers. 😎"
+    ]
   }
 }
