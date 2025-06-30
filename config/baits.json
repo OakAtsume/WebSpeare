@@ -366,7 +366,7 @@
   "return-shifter": {
     "enabled": true,
     "default": 200,
-    "chance": 0.50,
+    "chance": 0.05,
     "return-codes": [
       404,
       403,
