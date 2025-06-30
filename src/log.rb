@@ -29,7 +29,7 @@ class Log4Web
     when :http
       puts("[\e[36m#{timestamp}\e[0m] [\e[34m#{level.to_s.upcase}\e[0m] #{message} : #{colorcode(code)}")
     when :waf
-      puts("[\e[36m#{timestamp}\e[0m] [\e[35m#{level.to_s.upcase}\e[0m] #{message}")
+      puts("[\e[36m#{timestamp}\e[0m] [\e[35m#{level.to_s.upcase}\e[0m] #{message} : #{colorcode(code)}")
     when :info
       puts("[\e[36m#{timestamp}\e[0m] [\e[32m#{level.to_s.upcase}\e[0m] #{message}")
     when :warn
