@@ -273,6 +273,8 @@ class HoneySet
       return "image/svg+xml"
     when "ico"
       return "image/x-icon"
+    when "json"
+      return "application/json"
     else
       return "text/plain"
     end

@@ -65,6 +65,28 @@ record.log(level: :info, message: "Server started on #{server.con[:host]}:#{serv
 
 server.on(:request) do |id, socket, request|
 
+  # Handle the attack map here!
+  # if request[:path] == "/map" && request[:host] == "127.0.0.1"
+  #   socket.write(
+  #     server.reply(
+  #       200,
+  #       File.read("config/attack-map.html"),
+  #       server.mimeFor(".html")
+  #     )
+  #   )
+  #   next
+  # elsif request[:path] == "/api/latest_attacks" && request[:host] == "127.0.0.1"
+  #   socket.write(
+  #     server.reply(
+  #       200,
+  #       File.read("/tmp/a.json"),
+  #       server.mimeFor(".json")
+  #     )
+  #   )
+  #   next
+  # end
+
+
   if request[:path] == "/.well-known/security.txt" && config["security-txt"]["enabled"]
     msg = config["security-txt"]["msg"].join("\n")
     socket.write(
@@ -76,7 +98,6 @@ server.on(:request) do |id, socket, request|
     )
     next
   end
-  
 
   # Handle robots.txt
   begin
@@ -177,8 +198,6 @@ server.on(:waf) do |id, socket, request, rule, data|
     )
     next
   end
-
-
 
   code = baits["return-shifter"]["default"]
 
