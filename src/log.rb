@@ -1,18 +1,37 @@
 require("json")
 class Log4Web
-  def initialize(textlogs, jsonlogs, timeformat, fileformat)
+  def initialize(textlogs, jsonlogs, timeformat, fileformat, greylog_conf)
     @logs = textlogs
     @json = jsonlogs
     @timeformat = timeformat
     @fileformat = fileformat
+    @greylog = greylog_conf
   end
 
   def reqLogs(req)
+    sendToGraylog(req)
     req = JSON.generate(req)
     logs = File.open("#{@json}/#{Time.now.strftime(@fileformat)}.json", "a")
     logs.write("#{req}\n")
     logs.close
   end
+
+  # Report data to Graylog Instance 
+  def sendToGraylog(request)
+    return unless @greylog["enabled"]
+    puts request
+    request["requestStamp"] = request[:timestamp] # To avoid it being deleted by greylog lol
+    begin
+      socket = TCPSocket.new(@greylog["host"], @greylog["port"])
+
+      socket.puts(JSON.generate(request))
+      socket.close
+    rescue => e
+      log(level: :error, message: "Failed to send to Graylog: #{e.message}")
+    end
+  end
+
+  
 
   def log(level: :info, message: "", code: nil)
     timestamp = Time.now.strftime(@timeformat)

@@ -25,12 +25,14 @@ baits = JSON.parse(File.read(
 page = File.read(
   config["web"]["page"]
 )
+
 # def initialize(textlogs, jsonlogs, timeformat, fileformat)
 record = Log4Web.new(
   config["logs"]["textpath"],
   config["logs"]["jsonpath"],
   config["logs"]["timeformat"],
-  config["logs"]["fileformat"]
+  config["logs"]["fileformat"],
+  config["graylog"]
 )
 
 # server = HoneySet.new(

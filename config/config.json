@@ -3,6 +3,11 @@
     "host": "0.0.0.0",
     "port": 8081
   },
+  "graylog": {
+    "enabled": true,
+    "host": "192.168.2.240",
+    "port": 5555
+  },
   "waf": {
     "rules": "config/waf/rules.json"
   },
