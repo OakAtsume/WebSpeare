@@ -19,7 +19,7 @@ class Log4Web
   # Report data to Graylog Instance 
   def sendToGraylog(request)
     return unless @greylog["enabled"]
-    puts request
+    # puts request
     request["requestStamp"] = request[:timestamp] # To avoid it being deleted by greylog lol
     begin
       socket = TCPSocket.new(@greylog["host"], @greylog["port"])
