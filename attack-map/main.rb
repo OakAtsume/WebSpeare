@@ -28,7 +28,7 @@ class LogTailer
     @file_handle.close if @file_handle && !@file_handle.closed?
 
     begin
-      @file_handle = File.open(@log_file_path, 'r')
+      @file_handle = File.open(@log_file_path, "r")
       @file_handle.seek(0, IO::SEEK_END)
       @last_pos = @file_handle.pos
       @last_inode = File.stat(@log_file_path).ino
@@ -55,10 +55,10 @@ class LogTailer
     end
 
     current_stat = begin
-      File.stat(@log_file_path)
-    rescue Errno::ENOENT
-      nil
-    end
+        File.stat(@log_file_path)
+      rescue Errno::ENOENT
+        nil
+      end
 
     if current_stat.nil?
       puts "LogTailer: File disappeared! Resetting."
@@ -112,8 +112,8 @@ class LogTailer
     @last_pos = @file_handle.pos
   end
 end
-# --- End LogTailer Class ---
 
+# --- End LogTailer Class ---
 
 # --- Global Queue for Attacks (Thread-Safe) ---
 # The log handler will push parsed attacks here, and the API endpoint will pop them.
@@ -205,7 +205,8 @@ def parse_honeypot_log_entry(log_entry, geoip_reader)
   return nil unless log_entry["host"] && log_entry["timestamp"]
 
   ip = log_entry["host"] # Assuming 'host' field in log is the source IP
-  
+
+  # ip = "98.167.96.231"
   # Attempt GeoIP lookup
   lat, lon, country_code = nil, nil, nil
   begin
@@ -213,6 +214,8 @@ def parse_honeypot_log_entry(log_entry, geoip_reader)
     lat = record.location.latitude
     lon = record.location.longitude
     country_code = record.country.iso_code
+    city = record.city.name
+    country_name = record.country.name
   rescue MaxMind::GeoIP2::AddressNotFoundError
     puts "GeoIP: Address not found for #{ip}. Skipping." # Debugging
     return nil # Skip if IP not found in GeoIP database
@@ -230,20 +233,11 @@ def parse_honeypot_log_entry(log_entry, geoip_reader)
   other_info = nil
 
   if log_entry["waf"]
-    attack_type = log_entry["wafRule"]["name"] || "WAF Trigger"
-    other_info = "Rule: #{log_entry["wafRule"]["regex"]}" if log_entry["wafRule"]["regex"]
-  elsif log_entry["path"]
-    case log_entry["path"].downcase
-    when "/robots.txt" then attack_type = "Robots.txt Scan"
-    when %r{/(phpmyadmin|admin|login|wp-admin|config\.php|git/config)}i
-      attack_type = "Admin/Config Probe"
-      other_info = "Path: #{log_entry["path"]}"
-    when %r{/\.env}i then attack_type = ".env Leak Attempt"
-    when %r{(sql|db|backup|dump)}i then attack_type = "Data Dump Probe"
-    else
-      attack_type = "Web Request"
-      other_info = "Path: #{log_entry["path"]}"
-    end
+    attack_type = log_entry["wafRule"]["name"]
+    other_info = "Path: #{log_entry["path"]}"
+  else
+    attack_type = "Web Request"
+    other_info = "Path: #{log_entry["path"]}"
   end
 
   {
@@ -252,15 +246,15 @@ def parse_honeypot_log_entry(log_entry, geoip_reader)
     timestamp: timestamp_iso,
     ip: ip,
     country: country_code,
+    state: city,
+    country_name: country_name,
     type: attack_type,
     other: other_info,
   }
 end
 
-
 # --- HoneySet Server Request Handlers ---
 server.on(:request) do |id, socket, request|
-
   puts request
   # Front-end routing for map.html
   if request[:path] == "/" || request[:path].include?("index") # Corrected path check
@@ -312,6 +306,5 @@ server.on(:error) do |id, socket, error|
 end
 
 puts "HoneySet server starting on #{config["server"]["host"]}:#{config["server"]["port"]}"
-
 
 server.attach()

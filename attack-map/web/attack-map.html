@@ -1,20 +1,11 @@
-<!DOCTYPE html>
-
-
 <html lang="en">
-  <head>
-<!-- YES THIS IS AI GENERATED CODE -->
- <!-- I CAN'T WRITE FRONT-END FOR THE LIFE OF ME XDDDDDDDDDDD -->
-    <meta charset="UTF-8" />
-    <title>WarGames Attack Map</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      crossorigin=""
-    />
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <title>WarGames Attack Map</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+        <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+        <style>
       /* --- Global Styles --- */
       html, body {
         margin: 0;
@@ -58,7 +49,8 @@
 
       /* General fading animation for elements */
       .fading-element {
-        animation: fadeOut 0.8s ease-out forwards;
+        /* Increased duration for attack lines to fade out */
+        animation: fadeOut 5s ease-out forwards; /* Changed from 0.8s to 5s */
       }
 
       /* Keyframe for general fading out */
@@ -107,7 +99,7 @@
         line-height: 1.4;
         opacity: 0; /* Start hidden for entrance animation */
         animation: slideIn 0.5s ease-out forwards, /* Slide in over 0.5s */
-                   fadeOutBox 3s ease-out 3s forwards; /* Fade out over 3s, starts after 3s delay */
+                   fadeOutBox 10s ease-out 5s forwards; /* Increased duration (10s) and delay (5s) */
         box-sizing: border-box; /* Include padding/border in width */
         pointer-events: auto; /* Make content clickable/selectable */
       }
@@ -135,7 +127,7 @@
         position: absolute;
         bottom: 20px;
         left: 20px;
-        width: 350px;
+        width: 95%;
         max-height: 40%; /* Limit height to prevent overlap */
         overflow-y: auto; /* Allow scrolling */
         z-index: 999;
@@ -172,14 +164,13 @@
       .log-entry .ip { color: aqua; }
       .log-entry .country { color: orange; }
     </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    <div id="alert-box-container"></div>
-    <div id="log-container"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script>
+    </head>
+    <body>
+        <div id="map"></div>
+        <div id="alert-box-container"></div>
+        <div id="log-container"></div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+        <script>
       // Initialize the map
       const map = L.map('map', {
         worldCopyJump: false,
@@ -272,16 +263,18 @@
         }).addTo(map);
 
         setTimeout(() => {
-            if (line && line._path) {
-                 line._path.classList.remove('drawing-line');
-                 line._path.classList.add('fading-element');
-            }
-            setTimeout(() => {
-                if (map.hasLayer(line)) {
-                    map.removeLayer(line);
-                }
-            }, 800);
-        }, 1500);
+          if (line && line._path) {
+              line._path.classList.remove('drawing-line');
+              line._path.classList.add('fading-element');
+          }
+          // The line removal is now tied to the fadeOut animation duration + some buffer
+          setTimeout(() => {
+              if (map.hasLayer(line)) {
+                  map.removeLayer(line);
+              }
+          }, 6000); // Increased from 5000ms (5 seconds) to 6000ms (6 seconds) to match the new fadeOut duration (5s) plus a small buffer
+      }, 1500); // This is the delay BEFORE the fadeOut animation starts. Kept at 1.5s (drawing animation time)
+
       }
 
       // --- Display Attack Alert Box (Right Side) ---
@@ -295,15 +288,13 @@
           box.innerHTML = `
               <h3>ATTACK DETECTED!</h3>
               <p><strong>Time:</strong> ${displayTime}</p>
-              <p><strong>Source:</strong> ${attackData.ip} (${attackData.country})</p>
+              <p><strong>Source:</strong> ${attackData.ip} (${attackData.country}/${attackData.state})</p>
               <p><strong>Type:</strong> ${attackData.type}</p>
           `;
           alertBoxContainer.appendChild(box);
-          setTimeout(() => {
-              if (box.parentNode === alertBoxContainer) {
-                  box.remove();
-              }
-          }, 6500);
+          // Removed the direct setTimeout for box removal here.
+          // The alert-box CSS animation "fadeOutBox" now handles its removal after a delay.
+          // The total duration for the alert box to be visible will be 0.5s (slideIn) + 5s (delay before fadeOutBox) + 10s (fadeOutBox duration) = 15.5 seconds.
       }
 
       // --- Append to Text Log (Lower-Left) ---
@@ -317,7 +308,7 @@
           logEntry.innerHTML = `
               <span class="timestamp">[${displayTime}]</span>
               <span class="type">${attackData.type}</span> from
-              <span class="ip">${attackData.ip}</span> (<span class="country">${attackData.country}</span>)
+              <span class="ip">${attackData.ip}</span> (<span class="country">${attackData.country_name}/${attackData.state}</span>)
               ${attackData.other ? `- ${attackData.other}` : ''}
           `;
           logContainer.appendChild(logEntry);
@@ -360,7 +351,7 @@
       pollAttacks();
 
       // Set up an interval to poll for attacks every 5 seconds
-      setInterval(pollAttacks, 5000);
+      setInterval(pollAttacks, 1500);
     </script>
-  </body>
+    </body>
 </html>
