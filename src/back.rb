@@ -148,6 +148,7 @@ class HoneySet
 
     return [false, nil, nil]
   end
+  
 
   def requestParse(data, socket)
     request = {

@@ -35,16 +35,6 @@ record = Log4Web.new(
   config["graylog"]
 )
 
-# server = HoneySet.new(
-#   waf: JSON.parse(File.read("config/waf/rules.json")),
-#   port: 8081,
-#   host: "0.0.0.0"
-# )
-# randomText = JSON.parse(File.read("config/poems.json"))
-# baits = JSON.parse(File.read("config/baits.json"))
-# page = File.read("config/site.html")
-# record = Log4Web.new(logs: "logs/")
-
 def randomWrap(text, inserts, params, strings)
   # puts text
   words = text.split(/\b/)
@@ -135,8 +125,21 @@ server.on(:request) do |id, socket, request|
     end
     # baits["return-shifter"]["return-codes"]
   end
-
   bait = page.dup
+  code = baits["return-shifter"]["default"]
+
+  # bait.gsub!("{{TITLE}}", baits["strings"].sample)
+  # text = randomText.sample.join(" ")
+  # bait.gsub!("{{POEM}}", randomWrap(text,baits["paths"], baits["params"], baits["strings"]))
+  # bait.gsub!("{{FOOTER}}", "Powered by ")
+
+  if baits["return-shifter"]["enabled"]
+    if rand < baits["return-shifter"]["chance"]
+      code = baits["return-shifter"]["return-codes"].sample
+    end
+    # baits["return-shifter"]["return-codes"]
+  end
+
   bait.gsub!("{{TITLE}}", baits["strings"].sample)
   text = randomText.sample.join(" ")
   bait.gsub!("{{POEM}}", randomWrap(text, baits["paths"], baits["params"], baits["strings"]))
@@ -148,6 +151,7 @@ server.on(:request) do |id, socket, request|
 
     socket.write(server.headersReply(code, bait.bytesize, server.mimeFor(".html")))
     time = rand(baits["backend-spoof"]["time-min"]..baits["backend-spoof"]["time-max"])
+
     # puts("Spoofing backend: pausing for: #{time}")
     request[:timeReply] = time
     sleep(time)
@@ -163,14 +167,6 @@ server.on(:request) do |id, socket, request|
       )
     )
   end
-
-  # socket.write(
-  #   server.reply(
-  #     200,
-  #     bait,
-  #     server.mimeFor(".html")
-  #   )
-  # )
 
   record.log(
     level: :http,
