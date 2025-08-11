@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="index, follow" />
   <title>{{TITLE}}</title>
   <style>
@@ -14,93 +14,121 @@
       max-width: 800px;
       margin: auto;
     }
+    h1, h2 {
+      font-family: Georgia, serif;
+      margin-bottom: 1rem;
+    }
     h1 {
       font-size: 2em;
-      margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.5em;
+      margin-top: 3rem;
     }
     .body {
       white-space: pre-wrap;
       font-style: italic;
       margin-bottom: 2rem;
     }
-    /* a {
-      display: inline-block;
-
-    }
-     */
     p {
       display: inline-block;
     }
-
     a {
-      /* display: block; */
-      /* color: #0077c;
-       */
       color: black;
       text-decoration: none;
       margin-bottom: 0.5rem;
     }
-    
+    form {
+      margin-bottom: 2rem;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    input[type="submit"] {
+      background-color: #222;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover {
+      background-color: #555;
+    }
     footer {
       margin-top: 4rem;
       font-size: 0.9em;
       color: #888;
+      text-align: center;
     }
   </style>
 </head>
 <body>
+
   <h1>{{TITLE}}</h1>
 
   <div class="body">
     <p>{{POEM}}</p>
-    
   </div>
 
-
-  <div>
+  <section>
     <h2>Member Login</h2>
     <form action="/login" method="post">
-      <label>Username:</label><br>
-      <input type="text" name="username"><br><br>
-      <label>Password:</label><br>
-      <input type="password" name="password"><br><br>
-      <input type="submit" value="Login">
-    </form>  
-  </div>
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" />
 
-  <div>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" />
+
+      <input type="submit" value="Login" />
+    </form>
+  </section>
+
+  <section>
     <h2>Administrator Login</h2>
     <form action="/admin" method="post">
-      <label>Email:</label><br>
-      <input type="email" name="email"><br><br>
-      <label>Password:</label><br>
-      <input type="password" name="password"><br><br>
-      <input type="submit" value="Access Panel">
-    </form>
-    
-  </div>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" />
 
-  <div>
+      <label for="admin-password">Password:</label>
+      <input type="password" id="admin-password" name="password" />
+
+      <input type="submit" value="Access Panel" />
+    </form>
+  </section>
+
+  <section>
     <h2>Employee Login</h2>
     <form action="/intranet" method="post">
-      <label>Employee ID:</label><br>
-      <input type="text" name="empid"><br><br>
-      <label>Password:</label><br>
-      <input type="password" name="password"><br><br>
-      <input type="submit" value="Sign In">
+      <label for="empid">Employee ID:</label>
+      <input type="text" id="empid" name="empid" />
+
+      <label for="emp-password">Password:</label>
+      <input type="password" id="emp-password" name="password" />
+
+      <input type="submit" value="Sign In" />
     </form>
-  </div>
+  </section>
 
-  
-
-  <div>
-    <h2>Search for </h2>
+  <section>
+    <h2>Search</h2>
     <form action="/search" method="get">
-      <label>Search for </label><br>
-      <input type="text" name="query"><br>
-      <input type="submit" value="Search"><br>
+      <label for="query">Search for:</label>
+      <input type="text" id="query" name="query" />
+
+      <input type="submit" value="Search" />
     </form>
-  </div>
+  </section>
 
   <footer>
     {{FOOTER}}

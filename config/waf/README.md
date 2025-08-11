@@ -36,7 +36,7 @@ The rules are defined as a hash, where the key is the rule name and the value is
 - `medium`: Rules that are likely to be malicious | Or that can cause some damage
 - `low`: Rules that are unlikely to be malicious | Or that can cause little damage
 
-## Actions
+## Actions (Disabled for the Tar-pit!)
 - `drop`: Drops the request without any response (Kills the underlying connection)
 - `blockpage`: Blocks the request and returns a block page (HTTP 403)
 - `maskblock`: Blocks the request and returns a masked block page This is useful to avoid fingerprinting attacks / Bots that try to identify the WAF (HTTP 200)

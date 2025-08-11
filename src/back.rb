@@ -118,11 +118,13 @@ class HoneySet
             # This can break the decoder and cause an error.
             # But that's okay, if the WaF can't decode it, neither will the application.
 
-            if request[:path].include?("%")
-              process = URI.decode_uri_component(request[:path]).downcase
-              if regex.match?(process)
-                infraction = "URL: #{process} (Decoded)"
-                return [true, rule, infraction]
+            if !request[:path].nil?
+              if request[:path].include?("%")
+                process = URI.decode_uri_component(request[:path]).downcase
+                if regex.match?(process)
+                  infraction = "URL: #{process} (Decoded)"
+                  return [true, rule, infraction]
+                end
               end
             end
 
@@ -150,11 +152,11 @@ class HoneySet
 
   def requestParse(data, socket)
     request = {
-      :method => nil,
-      :path => nil,
-      :version => nil,
+      :method => "",
+      :path => "",
+      :version => "",
       :headers => {},
-      :body => nil,
+      :body => "",
       :params => {},
       :host => socket.peeraddr[2], # Get the IP address of the client
       :timestamp => Time.now.to_s,
@@ -187,13 +189,19 @@ class HoneySet
         end
       end
 
-      if request[:path].include?("?")
-        request[:path], request[:params] = request[:path].split("?")
-        request[:params] = URI.decode_www_form(request[:params]).to_h
+      # if request[:path].include?("?") && !request[:path].nil?
+      # if request[:path].nil? && request[:path].include("?")
+      if !request[:path].nil?
+        if request[:path].include?("?")
+          request[:path], request[:params] = request[:path].split("?")
+          request[:params] = URI.decode_www_form(request[:params]).to_h
+        end
       end
+
       request[:timestamp] = Time.now.to_i
       return request
     rescue => e
+      puts("#{e}\n#{e.backtrace.join("\n")}")
       emit(:error, @id, socket, e) # Emit error event
       nil
     end
@@ -266,6 +274,8 @@ class HoneySet
       return "image/svg+xml"
     when "ico"
       return "image/x-icon"
+    when "json"
+      return "application/json"
     else
       return "text/plain"
     end

@@ -261,7 +261,7 @@
     "' OR '1'='1' --",
     "<scrpt>alert('x')</scrpt>",
     "<iframe src='http://bad.site'>",
-    "<img src=x oneRRor=alert(1)>",
+    "<img src=x alert(1)>",
     "<?php sYstem($_GET['sh']); ?>",
     "<? echo shell_exe(",
     "eval(bAse64_d3code(",
@@ -418,8 +418,8 @@
     ]
   },
   "backend-spoof": {
-    "time-min": 0.5,
-    "time-max": 2,
+    "time-min": 0.1,
+    "time-max": 4,
     "enabled": true
   }
 }
