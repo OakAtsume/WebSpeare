@@ -7,8 +7,6 @@ require("uri")
 
 # {"eventid":"cowrie.client.version","version":"SSH-2.0-libssh_0.11.1","message":"Remote SSH version: SSH-2.0-libssh_0.11.1","sensor":"relaynet","timestamp":"2025-04-06T21:15:41.828407Z","src_ip":"196.251.87.35","session":"eee58e6b2f89"}
 
-
-
 # Honeypot lol
 class HoneySet
   def initialize(host: "127.0.0.1", port: 8080, buffer: 4096, waf: {}, reverseProxy: true)
@@ -148,6 +146,7 @@ class HoneySet
 
     return [false, nil, nil]
   end
+  
 
   def requestParse(data, socket)
     request = {
@@ -158,9 +157,13 @@ class HoneySet
       :body => nil,
       :params => {},
       :host => socket.peeraddr[2], # Get the IP address of the client
-      :timestamp => Time.now.to_s
+      :timestamp => Time.now.to_s,
     }
     begin
+      if !data.valid_encoding? # Patch cuz ruby handles binary data weird :/
+        data = data.force_encoding(Encoding::UTF_8)
+      end
+
       raw = data.split("\r\n")
       request[:method], request[:path], request[:version] = raw[0].split(" ")
       raw.shift
@@ -225,6 +228,24 @@ class HoneySet
     return response
   end
 
+  def headersReply(code, size, mime, headers = {})
+    response = ""
+    response += "HTTP/1.1 #{code}\r\n"
+    response += "X-Content-Type-Options: nosniff\r\n"
+    response += "X-Download-Options: noopen\r\n"
+    response += "X-Frame-Options: SAMEORIGIN\r\n"
+    response += "X-Permitted-Cross-Domain-Policies: none\r\n"
+    response += "X-XSS-Protection: 1; mode=block\r\n"
+    response += "Content-Type: #{mime}\r\n"
+    response += "Content-Length: #{size}\r\n"
+    response += "Connection: close\r\n"
+    headers.each do |key, value|
+      response += "#{key}: #{value}\r\n"
+    end
+    response += "\r\n"
+    return response
+  end
+
   def mimeFor(path)
     case path.split(".")[-1]
     when "html"
@@ -249,8 +270,8 @@ class HoneySet
       return "text/plain"
     end
   end
+
   def attach()
     @handler.join # This is to keep the server running (should work with docker)
   end
-  
 end

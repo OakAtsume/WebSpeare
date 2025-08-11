@@ -10,7 +10,7 @@ require_relative("src/log.rb")
 server = HoneySet.new(
   waf: JSON.parse(File.read("config/waf/rules.json")),
   port: 8081,
-  host: "0.0.0.0"
+  host: "0.0.0.0",
 )
 randomText = JSON.parse(File.read("config/poems.json"))
 baits = JSON.parse(File.read("config/baits.json"))
@@ -18,8 +18,7 @@ page = File.read("config/site.html")
 
 record = Log4Web.new(logs: "logs/")
 
-
-def randomWrap(text, inserts,params, strings)
+def randomWrap(text, inserts, params, strings)
   # puts text
   words = text.split(/\b/)
   words.map! do |word|
@@ -33,28 +32,53 @@ def randomWrap(text, inserts,params, strings)
       word
     end
   end
-  
+
   return words.join("")
 end
-
 
 record.log(level: :info, message: "Server started on #{server.con[:host]}:#{server.con[:port]}")
 
 server.on(:request) do |id, socket, request|
-
   bait = page.dup
+  code = baits["return-shifter"]["default"]
+
+  # bait.gsub!("{{TITLE}}", baits["strings"].sample)
+  # text = randomText.sample.join(" ")
+  # bait.gsub!("{{POEM}}", randomWrap(text,baits["paths"], baits["params"], baits["strings"]))
+  # bait.gsub!("{{FOOTER}}", "Powered by ")
+
+  if baits["return-shifter"]["enabled"]
+    if rand < baits["return-shifter"]["chance"]
+      code = baits["return-shifter"]["return-codes"].sample
+    end
+    # baits["return-shifter"]["return-codes"]
+  end
+
   bait.gsub!("{{TITLE}}", baits["strings"].sample)
   text = randomText.sample.join(" ")
-  bait.gsub!("{{POEM}}", randomWrap(text,baits["paths"], baits["params"], baits["strings"]))
+  bait.gsub!("{{POEM}}", randomWrap(text, baits["paths"], baits["params"], baits["strings"]))
   bait.gsub!("{{FOOTER}}", "Powered by ")
-  socket.write(
-    server.reply(
-      200,
-      bait,
-      server.mimeFor(".html")
+
+  if baits["backend-spoof"]["enabled"]
+    # server.headersReply(code,server.mimeFor(".html"))
+    # First we send just the headers. Then the body (Spoofing a backend)
+
+    socket.write(server.headersReply(code, bait.bytesize, server.mimeFor(".html")))
+    time = rand(baits["backend-spoof"]["time-min"]..baits["backend-spoof"]["time-max"])
+    puts("Spoofing backend: pausing for: #{time}")
+    sleep(time)
+    puts("sending body now (spoof)")
+    socket.write(bait)
+
+  else
+    socket.write(
+      server.reply(
+        code,
+        bait,
+        server.mimeFor(".html")
+      )
     )
-  )
-  
+  end
 
   record.log(
     level: :http,
@@ -62,7 +86,6 @@ server.on(:request) do |id, socket, request|
     code: 200,
   )
   record.reqLogs(request)
-
 end
 
 # This will trigger a block on one's self.
@@ -77,8 +100,9 @@ server.on(:waf) do |id, socket, request, rule, data|
   bait = page.dup
   bait.gsub!("{{TITLE}}", baits["strings"].sample)
   text = randomText.sample.join(" ")
-  bait.gsub!("{{POEM}}", randomWrap(text,baits["paths"], baits["params"], baits["strings"]))
+  bait.gsub!("{{POEM}}", randomWrap(text, baits["paths"], baits["params"], baits["strings"]))
   bait.gsub!("{{FOOTER}}", "Powered by ")
+
   socket.write(
     server.reply(
       200,
@@ -95,7 +119,6 @@ server.on(:waf) do |id, socket, request, rule, data|
     code: 200,
   )
   record.reqLogs(request)
-
 end
 
 server.on(:error) do |id, socket, error|
