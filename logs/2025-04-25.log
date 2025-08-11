@@ -1,0 +1,42 @@
+[14:07:40] [INFO] Server started on 0.0.0.0:8081
+[14:07:43] [HTTP] GET / HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:07:43] [HTTP] GET /x HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:07:43] [HTTP] GET /favicon.ico HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:07:51] [HTTP] GET /backend HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:07:53] [HTTP] GET /forgot-password HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {"key"=>"/cms"} 127.0.0.1
+  200
+[14:07:55] [HTTP] GET /api/v2 HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:08:57] [INFO] Server started on 0.0.0.0:8081
+[14:08:59] [HTTP] GET /api/v2 HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:11:54] [INFO] Server started on 0.0.0.0:8081
+[14:11:56] [HTTP] GET /api/v2 HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:12:01] [HTTP] GET /search HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {"query"=>"asdfasdfasdf"} 127.0.0.1
+  200
+[14:12:09] [WAF] POST /login HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(46) {} 127.0.0.1
+  200
+[14:12:39] [WAF] POST /login HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(42) {} 127.0.0.1
+  200
+[14:13:27] [WAF] POST /login HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(42) {} 127.0.0.1
+  200
+[14:13:34] [WAF] GET /login HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:13:38] [INFO] Server started on 0.0.0.0:8081
+[14:13:40] [WAF] GET /login HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:13:45] [WAF] GET /cmd.php HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:13:47] [HTTP] GET /test HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:13:48] [WAF] GET /wordpress/wp-login.php HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:13:52] [WAF] GET /passwd.txt HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200
+[14:13:53] [HTTP] GET /backup HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0 B(0) {} 127.0.0.1
+  200

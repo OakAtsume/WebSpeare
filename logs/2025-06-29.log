@@ -1,0 +1,14 @@
+[10:17:25] [INFO] Server started on 0.0.0.0:8081
+[10:18:22] [INFO] Server started on 0.0.0.0:8081
+[10:18:31] [HTTP] GET / HTTP/1.1 curl/8.14.1 B(0) {} 127.0.0.1
+  200
+[10:18:43] [WAF] GET index.html HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0 B(0) {} 127.0.0.1
+  200
+[10:18:45] [WAF] GET index.html HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0 B(0) {} 127.0.0.1
+  200
+[10:18:53] [WAF] GET index.html HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0 B(0) {} 127.0.0.1
+  200
+[10:18:54] [WAF] GET index.html HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0 B(0) {} 127.0.0.1
+  200
+[10:18:56] [WAF] GET index.html HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0 B(0) {} 127.0.0.1
+  200
