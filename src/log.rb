@@ -1,4 +1,5 @@
 require("json")
+
 class Log4Web
   def initialize(textlogs, jsonlogs, timeformat, fileformat, greylog_conf)
     @logs = textlogs
@@ -16,7 +17,7 @@ class Log4Web
     logs.close
   end
 
-  # Report data to Graylog Instance 
+  # Report data to Graylog Instance
   def sendToGraylog(request)
     return unless @greylog["enabled"]
     # puts request
@@ -30,10 +31,23 @@ class Log4Web
       request.each do |key, value|
         if value.is_a?(String) && value.include?(public_ip)
           request[key] = value.gsub(public_ip, redact_with)
+        elsif value.is_a?(Array)
+          value.map! do |item|
+            if item.is_a?(String) && item.include?(public_ip)
+              item.gsub(public_ip, redact_with)
+            else
+              item
+            end
+          end
+        elsif value.is_a?(Hash)
+          value.each do |k, v|
+            if v.is_a?(String) && v.include?(public_ip)
+              value[k] = v.gsub(public_ip, redact_with)
+            end
+          end
         end
       end
     end
-    
 
     begin
       socket = TCPSocket.new(@greylog["host"], @greylog["port"])
@@ -44,8 +58,6 @@ class Log4Web
       log(level: :error, message: "Failed to send to Graylog: #{e.message}")
     end
   end
-
-  
 
   def log(level: :info, message: "", code: nil)
     timestamp = Time.now.strftime(@timeformat)
@@ -73,6 +85,7 @@ class Log4Web
       puts("[\e[36m#{timestamp}\e[0m] [\e[34m#{level.to_s.upcase}\e[0m] #{message}")
     end
   end
+
   def colorcode(code)
     case code
     when 200
@@ -83,5 +96,4 @@ class Log4Web
       return "\e[33m#{code}\e[0m"
     end
   end
-  
 end
