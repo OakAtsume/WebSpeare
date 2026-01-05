@@ -23,32 +23,6 @@ class Log4Web
     # puts request
     request["requestStamp"] = request[:timestamp] # To avoid it being deleted by greylog lol
     request["facility"] = @greylog["facility"] || "Unspecifiedy"
-
-    # Redact Public IP if enabled (for privacy)
-    if defined?(@redactPublicIP) && @redactPublicIP["enabled"]
-      public_ip = @redactPublicIP["publicIP"]
-      redact_with = @redactPublicIP["redactWith"]
-      request.each do |key, value|
-        if value.is_a?(String) && value.include?(public_ip)
-          request[key] = value.gsub(public_ip, redact_with)
-        elsif value.is_a?(Array)
-          value.map! do |item|
-            if item.is_a?(String) && item.include?(public_ip)
-              item.gsub(public_ip, redact_with)
-            else
-              item
-            end
-          end
-        elsif value.is_a?(Hash)
-          value.each do |k, v|
-            if v.is_a?(String) && v.include?(public_ip)
-              value[k] = v.gsub(public_ip, redact_with)
-            end
-          end
-        end
-      end
-    end
-
     begin
       socket = TCPSocket.new(@greylog["host"], @greylog["port"])
 

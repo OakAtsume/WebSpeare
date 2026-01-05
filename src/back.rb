@@ -9,13 +9,15 @@ require("uri")
 
 # Honeypot lol
 class HoneySet
-  def initialize(host: "127.0.0.1", port: 8080, buffer: 4096, waf: {}, reverseProxy: true)
+  def initialize(host: "127.0.0.1", port: 8080, buffer: 4096, waf: {}, reverseProxy: true, configs: {})
+
     @con = {
       host: host,
       port: port,
       buffer: buffer,
       waf: waf,
       reverseProxy: reverseProxy,
+      configs: configs
     }
     @events = {}
 
@@ -48,6 +50,7 @@ class HoneySet
 
                 begin
                   parse = requestParse(data, socket)
+                  # puts parse
                   if parse.nil?
                     emit(:error, @id, socket, "Failed to parse request") # Emit error event
                     break
@@ -173,11 +176,15 @@ class HoneySet
       raw.each do |line|
         if line.include?(":")
           key, value = line.split(": ")
+          # Redact public IP if enabled
+          if @con[:configs]["redactPublicIP"]["enabled"] && (value.include?(@con[:configs]["redactPublicIP"]["publicIP"]))
+            value = value.gsub(@con[:configs]["redactPublicIP"]["publicIP"], @con[:configs]["redactPublicIP"]["redactWith"])
+          end
           request[:headers][key] = value
         end
       end
       if request[:headers].key?("Content-Length")
-        request[:body] = raw[-1]
+        request[:body] = raw[-1] # Read what's left as body
       end
 
       if @con[:reverseProxy] # Are we using a reverse proxy?

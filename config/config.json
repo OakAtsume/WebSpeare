@@ -1,18 +1,18 @@
 {
+  "redactPublicIP": {
+    "enabled": true,
+    "publicIP": "localhost",
+    "redactWith": "[REDACTED-PUBLIC-IP]"
+  },
   "server": {
     "host": "127.0.0.1",
     "port": 8081
   },
   "graylog": {
-    "enabled": true,
+    "enabled": false,
     "host": "192.168.67.1",
     "port": 5000,
-    "facility": "WebSpeare-Honeypot",
-    "redactPublicIP": {
-      "enabled": true,
-      "publicIP": "",
-      "redactWith": "[REDACTED-PUBLIC-IP]"
-    }
+    "facility": "WebSpeare-Honeypot"
   },
   "waf": {
     "rules": "config/waf/rules.json"

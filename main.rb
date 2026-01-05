@@ -14,6 +14,7 @@ server = HoneySet.new(
   waf: JSON.parse(File.read(config["waf"]["rules"])),
   host: config["server"]["host"],
   port: config["server"]["port"],
+  configs: config
 )
 
 randomText = JSON.parse(File.read(
@@ -273,7 +274,7 @@ server.on(:error) do |id, socket, error|
       socket.write(
         server.reply(
           400, # Bad Request
-          "Invalid reques!",
+          "<html><body><h1>400 Bad Request</h1><p>Your browser sent a request that this server could not understand.</p></body></html>",
           server.mimeFor(".html"),
         )
       )
