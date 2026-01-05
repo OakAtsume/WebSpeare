@@ -1,12 +1,18 @@
 {
   "server": {
-    "host": "0.0.0.0",
+    "host": "127.0.0.1",
     "port": 8081
   },
   "graylog": {
     "enabled": true,
-    "host": "192.168.2.240",
-    "port": 5555
+    "host": "192.168.67.1",
+    "port": 5000,
+    "facility": "WebSpeare-Honeypot",
+    "redactPublicIP": {
+      "enabled": true,
+      "publicIP": "",
+      "redactWith": "[REDACTED-PUBLIC-IP]"
+    }
   },
   "waf": {
     "rules": "config/waf/rules.json"
@@ -23,17 +29,12 @@
     "jsonpath": "logs/json/"
   },
   "security-txt": {
-    "enabled": true,
+    "enabled": false,
     "msg": [
       "# security.txt",
-      "Contact: mailto:yvvq28ql4@mozmail.com",
+      "Contact: mailto:oak@801labs.org",
       "Discord: @OakAtsume",
-      "Preferred-Languages: en, es",
-      "# 🎉 Hey there, friend!",
-      "# Looks like you were looking for the responsible disclosure path — and we love that. ❤️",
-      "# This is actually a honeypot, but you're one of the good ones — no worries, we won’t report you or blacklist you.",
-      "# In fact, thanks for being awesome and taking the high road.",
-      "# Feel free to say hi if you want — we like cool hackers. 😎"
+      "Preferred-Languages: en, es"
     ]
   }
 }
