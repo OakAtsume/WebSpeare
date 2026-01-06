@@ -25,7 +25,6 @@ class Log4Web
     request["facility"] = @greylog["facility"] || "Unspecifiedy"
     begin
       socket = TCPSocket.new(@greylog["host"], @greylog["port"])
-
       socket.puts(JSON.generate(request))
       socket.close
     rescue => e

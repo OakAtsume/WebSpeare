@@ -4,20 +4,19 @@ require("thread")
 require("securerandom")
 require("json")
 require("uri")
-
+require("time")
 # {"eventid":"cowrie.client.version","version":"SSH-2.0-libssh_0.11.1","message":"Remote SSH version: SSH-2.0-libssh_0.11.1","sensor":"relaynet","timestamp":"2025-04-06T21:15:41.828407Z","src_ip":"196.251.87.35","session":"eee58e6b2f89"}
 
 # Honeypot lol
 class HoneySet
   def initialize(host: "127.0.0.1", port: 8080, buffer: 4096, waf: {}, reverseProxy: true, configs: {})
-
     @con = {
       host: host,
       port: port,
       buffer: buffer,
       waf: waf,
       reverseProxy: reverseProxy,
-      configs: configs
+      configs: configs,
     }
     @events = {}
 
@@ -49,7 +48,12 @@ class HoneySet
                 end
 
                 begin
-                  parse = requestParse(data, socket)
+                  clientIP = begin
+                      socket.peeraddr[2]
+                    rescue
+                      "unknown"
+                    end # Get the IP address of the client
+                  parse = requestParse(data, socket, clientIP)
                   # puts parse
                   if parse.nil?
                     emit(:error, @id, socket, "Failed to parse request") # Emit error event
@@ -151,17 +155,39 @@ class HoneySet
 
     return [false, nil, nil]
   end
-  
 
-  def requestParse(data, socket)
+  def normalizeHeaderKey(key)
+    key
+      .strip
+      .downcase
+      .gsub(/[^a-z0-9\-]/, "_") # kill JSON / proto tricks
+      .slice(0, 64)             # length cap
+  end
+
+  def safeString(obj)
+    case obj
+    when String
+      obj.encode("UTF-8", invalid: :replace, undef: :replace, replace: "�")
+    when Hash
+      obj.transform_values { |v| safeString(v) }
+    when Array
+      obj.map { |v| safeString(v) }
+    else
+      obj
+    end
+  end
+
+  def requestParse(data, socket, clientIP)
     request = {
       :method => "",
       :path => "",
       :version => "",
       :headers => {},
+      :raw_headers => [],
+      :malformed => false,  # Indicate if the request is malformed
       :body => "",
       :params => {},
-      :host => socket.peeraddr[2], # Get the IP address of the client
+      :host => clientIP, # Get the IP address of the client
       :timestamp => Time.now.to_s,
     }
     begin
@@ -173,25 +199,57 @@ class HoneySet
       request[:method], request[:path], request[:version] = raw[0].split(" ")
       raw.shift
 
+      if request[:method] !~ /\A[A-Z]{1,10}\z/
+        request[:malformed] = true
+      end
+
+      if request[:version] !~ /\AHTTP\/\d\.\d\z/
+        request[:malformed] = true
+      end
+
       raw.each do |line|
         if line.include?(":")
-          key, value = line.split(": ")
+          request[:raw_headers] << line # Keep raw headers for logging as JSON
+
+          key, value = line.split(":", 2) # Cap to 2 (Patches attackers doing multiple colons)
+          if value.nil?
+            request[:malformed] = true
+            next
+          end
+          value = value.lstrip
+          safeKey = normalizeHeaderKey(key)
           # Redact public IP if enabled
           if @con[:configs]["redactPublicIP"]["enabled"] && (value.include?(@con[:configs]["redactPublicIP"]["publicIP"]))
             value = value.gsub(@con[:configs]["redactPublicIP"]["publicIP"], @con[:configs]["redactPublicIP"]["redactWith"])
           end
-          request[:headers][key] = value
+          request[:headers][safeKey] = value
+
+          if safeKey.nil? || safeKey.empty? || safeKey != key.strip.downcase # Check for malformed headers
+            request[:malformed] = true
+          end
+          request[:headers][safeKey] = value
+        elsif !line.empty?
+          request[:malformed] = true # Malformed header (no colon)
         end
       end
-      if request[:headers].key?("Content-Length")
-        request[:body] = raw[-1] # Read what's left as body
+
+      if request[:headers].key?("content-length")
+        bodyIndex = raw.index("")
+        if bodyIndex
+          request[:body] = raw[(bodyIndex + 1)..-1].join("\n") # Read body after the first empty line
+        else
+          request[:body] = "" # No body found
+        end
+
+        # request[:body] = raw[-1] # Read what's left as body
+
       end
 
       if @con[:reverseProxy] # Are we using a reverse proxy?
         if request[:host] == "127.0.0.1" || request[:host] == "0.0.0.0" # If the host is localhost
-          if request[:headers].key?("X-Forwarded-For") || request[:headers].key?("X-Real-IP")
-            request[:headers]["X-Forwarded-For"] = request[:headers]["X-Forwarded-For"] || request[:headers]["X-Real-IP"] # Get the IP address from the reverse proxy
-            request[:host] = request[:headers]["X-Forwarded-For"] # Set the host to the IP address from the reverse proxy
+          if request[:headers].key?("x-forwarded-for") || request[:headers].key?("x-real-ip")
+            request[:headers]["x-forwarded-for"] = request[:headers]["x-forwarded-for"] || request[:headers]["x-real-ip"] # Get the IP address from the reverse proxy
+            request[:host] = request[:headers]["x-forwarded-for"] # Set the host to the IP address from the reverse proxy
           end
         end
       end
@@ -205,8 +263,8 @@ class HoneySet
         end
       end
 
-      request[:timestamp] = Time.now.to_i
-      return request
+      request[:timestamp] = Time.now.utc.iso8601 # Set timestamp to UTC ISO8601 format
+      return safeString(request) # Return the request: Safe for JSON logging
     rescue => e
       puts("#{e}\n#{e.backtrace.join("\n")}")
       emit(:error, @id, socket, e) # Emit error event

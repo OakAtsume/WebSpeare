@@ -108,7 +108,7 @@ server.on(:request) do |id, socket, request|
       )
       record.log(
         level: :http,
-        message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["User-Agent"] ? request[:headers]["User-Agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]}",
+        message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]}",
         code: 200,
       )
       record.reqLogs(request)
@@ -171,7 +171,7 @@ server.on(:request) do |id, socket, request|
 
   record.log(
     level: :http,
-    message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["User-Agent"] ? request[:headers]["User-Agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]}",
+    message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]}",
     code: code,
   )
   record.reqLogs(request)
@@ -260,7 +260,7 @@ server.on(:waf) do |id, socket, request, rule, data|
   request[:wafRule] = rule
   record.log(
     level: :waf,
-    message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["User-Agent"] ? request[:headers]["User-Agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]}",
+    message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]}",
     code: code,
   )
   record.reqLogs(request)
