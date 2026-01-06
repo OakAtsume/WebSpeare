@@ -263,7 +263,7 @@ class HoneySet
         end
       end
 
-      request[:timestamp] = (Time.now.utc.to_f * 1000).to_i # Set timestamp to UTC ISO8601 format
+      request[:timestamp] = Time.now.to_i # Set timestamp to UTC ISO8601 format
       return safeString(request) # Return the request: Safe for JSON logging
     rescue => e
       puts("#{e}\n#{e.backtrace.join("\n")}")
