@@ -302,7 +302,8 @@ end
 server.on(:error) do |id, socket, error|
   puts("HoneySet Error for ID #{id}:")
   puts(error)
-  puts(error.backtrace.join("\n")) # Print full backtrace for better debugging
+  puts(error.backtrace)
+  # puts(error.backtrace.join("\n")) # Print full backtrace for better debugging
 end
 
 puts "HoneySet server starting on #{config["server"]["host"]}:#{config["server"]["port"]}"
