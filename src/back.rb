@@ -9,12 +9,11 @@ require("time")
 
 # Honeypot lol
 class HoneySet
-  def initialize(host: "127.0.0.1", port: 8080, buffer: 4096, waf: {}, reverseProxy: true, configs: {})
+  def initialize(host: "127.0.0.1", port: 8080, buffer: 4096, reverseProxy: true, configs: {})
     @con = {
       host: host,
       port: port,
       buffer: buffer,
-      waf: waf,
       reverseProxy: reverseProxy,
       configs: configs,
     }
@@ -24,10 +23,8 @@ class HoneySet
 
     # Register events
     @events[:request] = []
-    @events[:waf] = [] # Triggered when a WAF rule is triggered
     @events[:error] = []
     @events[:close] = []
-    @events[:event] = [] # General events
 
     @sockets = {}
     @id = 0
@@ -60,14 +57,7 @@ class HoneySet
                     break
                   end
 
-                  waf = wafParse(parse)
-
-                  if waf[0]
-                    emit(:waf, @id, socket, parse, waf[1], waf[2]) # Emit waf event
-                    break
-                  else
-                    emit(:request, @id, socket, parse) # Emit request event
-                  end
+                  emit(:request, @id, socket, parse) # Emit request event
                 rescue => e
                   emit(:error, @id, socket, e) # Emit error event
                   if !socket.closed?
@@ -89,72 +79,6 @@ class HoneySet
   end
 
   attr_reader :con
-
-  def wafParse(request)
-    infraction = ""
-
-    begin
-      @con[:waf].each do |rule|
-        points = rule["section"]
-        regex = Regexp.new(rule["regex"])
-        # puts(">>[RULE] #{rule}")
-        points.each do |point|
-          case point
-          when "headers"
-            request[:headers].each do |key, value|
-              if regex.match?(value)
-                infraction = "Header: #{key} (#{value})"
-                return [true, rule, infraction]
-              end
-            end
-          when "body"
-            # next if request[:body].nil?
-            if regex.match?(request[:body])
-              infraction = "Body: #{request[:body]}"
-              return [true, rule, infraction]
-            end
-          when "url"
-            process = request[:path].downcase
-            if regex.match?(process)
-              infraction = "URL: #{process}"
-              return [true, rule, infraction]
-            end
-
-            # If the path contains encoding, decode it
-            # Sometimes attackers will encode the URL with invalid data.
-            # This can break the decoder and cause an error.
-            # But that's okay, if the WaF can't decode it, neither will the application.
-
-            if !request[:path].nil?
-              if request[:path].include?("%")
-                process = URI.decode_uri_component(request[:path]).downcase
-                if regex.match?(process)
-                  infraction = "URL: #{process} (Decoded)"
-                  return [true, rule, infraction]
-                end
-              end
-            end
-
-            if request[:params].size > 0
-              request[:params].each do |key, value|
-                if regex.match?(value)
-                  infraction = "URL: #{value}"
-                  return [true, rule, infraction]
-                end
-              end
-            end
-          else
-            next
-          end
-        end
-      end
-    rescue => e
-      # puts(">>> #{e} (#{e.backtrace.join("\n")})")
-      # exit 1
-    end
-
-    return [false, nil, nil]
-  end
 
   def normalizeHeaderKey(key)
     key
@@ -240,9 +164,6 @@ class HoneySet
         else
           request[:body] = "" # No body found
         end
-
-        # request[:body] = raw[-1] # Read what's left as body
-
       end
 
       if @con[:reverseProxy] # Are we using a reverse proxy?
@@ -254,8 +175,6 @@ class HoneySet
         end
       end
 
-      # if request[:path].include?("?") && !request[:path].nil?
-      # if request[:path].nil? && request[:path].include("?")
       if !request[:path].nil?
         if request[:path].include?("?")
           request[:path], request[:params] = request[:path].split("?")
@@ -282,42 +201,40 @@ class HoneySet
     end
   end
 
-  def reply(code, body, mime, headers = {})
-    response = ""
-    response += "HTTP/1.1 #{code}\r\n"
-    response += "X-Content-Type-Options: nosniff\r\n"
-    response += "X-Download-Options: noopen\r\n"
-    response += "X-Frame-Options: SAMEORIGIN\r\n"
-    response += "X-Permitted-Cross-Domain-Policies: none\r\n"
-    response += "X-XSS-Protection: 1; mode=block\r\n"
-    response += "Content-Type: #{mime}\r\n"
-    response += "Content-Length: #{body.bytesize}\r\n"
-    response += "Connection: close\r\n"
-    headers.each do |key, value|
-      response += "#{key}: #{value}\r\n"
-    end
-    response += "\r\n"
-    response += body
-    return response
-  end
+  def genReply(code, body, mime, headers = {})
+		out = ""
+		out += "HTTP/1.1 #{code}\r\n"
+		out += "Content-Type: #{mime}\r\n"
+		out += "Content-Lenght: #{body.bytesize}"
+		headers.each do |k,v|
+			out += "#{key}: #{value}\r\n"
+		end
+		
+		out += "Connection: close\r\n"
+		out += "\r\n"
+		out += body
+		return out
+	end
 
-  def headersReply(code, size, mime, headers = {})
-    response = ""
-    response += "HTTP/1.1 #{code}\r\n"
-    response += "X-Content-Type-Options: nosniff\r\n"
-    response += "X-Download-Options: noopen\r\n"
-    response += "X-Frame-Options: SAMEORIGIN\r\n"
-    response += "X-Permitted-Cross-Domain-Policies: none\r\n"
-    response += "X-XSS-Protection: 1; mode=block\r\n"
-    response += "Content-Type: #{mime}\r\n"
-    response += "Content-Length: #{size}\r\n"
-    response += "Connection: close\r\n"
-    headers.each do |key, value|
-      response += "#{key}: #{value}\r\n"
-    end
-    response += "\r\n"
-    return response
-  end
+  # def reply(code, body, mime, headers = {})
+  #   response = ""
+  #   response += "HTTP/1.1 #{code}\r\n"
+  #   response += "X-Content-Type-Options: nosniff\r\n"
+  #   response += "X-Download-Options: noopen\r\n"
+  #   response += "X-Frame-Options: SAMEORIGIN\r\n"
+  #   response += "X-Permitted-Cross-Domain-Policies: none\r\n"
+  #   response += "X-XSS-Protection: 1; mode=block\r\n"
+  #   response += "Content-Type: #{mime}\r\n"
+  #   response += "Content-Length: #{body.bytesize}\r\n"
+  #   response += "Connection: close\r\n"
+  #   headers.each do |key, value|
+  #     response += "#{key}: #{value}\r\n"
+  #   end
+  #   response += "\r\n"
+  #   response += body
+  #   return response
+  # end
+
 
   def mimeFor(path)
     case path.split(".")[-1]

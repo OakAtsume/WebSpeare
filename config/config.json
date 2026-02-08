@@ -9,13 +9,10 @@
     "port": 8081
   },
   "graylog": {
-    "enabled": false,
-    "host": "192.168.67.1",
+    "enabled": true,
+    "host": "127.0.0.1",
     "port": 5000,
     "facility": "WebSpeare-Honeypot"
-  },
-  "waf": {
-    "rules": "config/waf/rules.json"
   },
   "web": {
     "poems": "config/poems.json",
