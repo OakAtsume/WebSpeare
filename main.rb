@@ -78,31 +78,24 @@ require_relative("waf/legacy")
 # require_relative("waf/test")
 require_relative("waf/decoys/redtail-hello-world")
 require_relative("waf/decoys/PHPInfoDecoy")
+require_relative("waf/decoys/CVE-2025-55182")
 legacy = LegacyChecks.new("waf/legacyrules")
 redTailSpoofer = CVE20244577_RedTailSpoofer.new()
 phpinfoDecoy = PHPInfoDecoy.new()
+react2Shell = CVE_2025_55182.new()
 
 # Method for Rule Data : Priority
 firewall.register(legacy.method(:legacyChecks), 900)
 firewall.register(redTailSpoofer.method(:runCheck), 101)
 firewall.register(phpinfoDecoy.method(:runCheck), 102)
-# firewall.register(testRule.method(:runTestRule), 101)
+firewall.register(react2Shell.method(:runCheck), 103)
+
 
 # === FIREWALL END === #
 
 # Default handlers
 @server.on(:request) do |id, socket, request|
-  # puts request
-  # puts firewall.runFirewall(request)
 
-  # socket.write("HTTP/1.1 200 OK\r\n")
-  # socket.write("Content-Type: text/html\r\n")
-  # msg = "You said : #{JSON.pretty_generate(request)}\n\n\nThe firewall said : #{JSON.pretty_generate(firewall.runFirewall(request))}"
-  # socket.write("Content-Length: #{msg.bytesize}\r\n")
-  # socket.write("Connection: close\r\n")
-  # socket.write("\r\n")
-  # socket.write(msg)
-  # socket.close
 
   fwReply = firewall.runFirewall(request)
   # puts fwReply

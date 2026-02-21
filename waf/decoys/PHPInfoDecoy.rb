@@ -18,7 +18,9 @@ class PHPInfoDecoy
 
     trigger_paths = ["/phpinfo.php", "/info.php", "/test.php"]
 
-    unless trigger_paths.include?(request[:path])
+    
+
+    unless trigger_paths.include?(request[:path]) || request[:body].include?("phpinfo()")
       return {
         triggered: false,
         overwrite: false,
@@ -26,6 +28,7 @@ class PHPInfoDecoy
         payload: nil
       }
     end
+
 
     rendered = render_template(request)
 
