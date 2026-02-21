@@ -123,14 +123,18 @@ firewall.register(phpinfoDecoy.method(:runCheck), 102)
       rescue => e
         puts("Failed to send reply from firewall rule. #{fwReply.inspect}")
       end
+      record.log(
+        level: :attacks,
+        message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]} (Firewall: #{fwReply[:reason]})",
+        code: fwReply[:code],
+      )
+      next
     end
-
     record.log(
       level: :attacks,
       message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]} (Firewall: #{fwReply[:reason]})",
       code: fwReply[:code],
     )
-    next
   end
 
   # Secure.txt handler
