@@ -83,7 +83,7 @@ redTailSpoofer = CVE20244577_RedTailSpoofer.new()
 phpinfoDecoy = PHPInfoDecoy.new()
 
 # Method for Rule Data : Priority
-firewall.register(legacy.method(:legacyChecks), 100)
+firewall.register(legacy.method(:legacyChecks), 900)
 firewall.register(redTailSpoofer.method(:runCheck), 101)
 firewall.register(phpinfoDecoy.method(:runCheck),102)
 # firewall.register(testRule.method(:runTestRule), 101)
