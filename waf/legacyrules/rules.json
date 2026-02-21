@@ -1,16 +1,18 @@
 [
   {
-    "name": "Coprehensive XSS (A) Common Entry Points",
+    "name": "XSS - Script & Event Injection",
+    "category": "xss",
     "level": "medium",
     "section": [
-      "url"
+      "url",
+      "body"
     ],
-    "regex": "(?i)(<script.*?>.*?</script>)|((javascript:|data:text\\/html|vbscript:)[^\\s]+)|(<[a-z]+\\s+[^>]*?(on\\w+|style\\s*=\\s*\\\".*?expression\\(.*?\\)).*?>)|(\\b(on\\w+)\\s*=\\s*\\\"[^\\\"]*?\\\")|(<[a-z]+[^>]*?href\\s*=\\s*\\\"javascript:[^\\\"]*?\\\")",
-    "action": "maskblock"
+    "regex": "(?i)(<script.*?>.*?</script>|javascript:|data:text\\/html|vbscript:|on\\w+\\s*=)",
+    "action": "log"
   },
-
   {
-    "name": "Generic Non-printable Characters",
+    "name": "Non-Printable Control Characters",
+    "category": "protocol-anomaly",
     "level": "medium",
     "section": [
       "headers",
@@ -18,155 +20,250 @@
       "url"
     ],
     "regex": "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]",
-    "action": "drop"
+    "action": "log"
   },
   {
-    "name": "Generic File Traversal (A)",
+    "name": "Directory Traversal Attempt",
+    "category": "lfi-traversal",
     "level": "high",
     "section": [
       "headers",
       "body",
       "url"
     ],
-    "regex": "/(\\.\\./|\\./|~\\/|/\\.\\./|\\\\\\.\\.|\\.\\\\|\\\\\\/|\\/\\.\\\\)/",
-    "action": "maskblock"
+    "regex": "(?i)(\\.\\./|%2e%2e%2f|%252e%252e%252f)",
+    "action": "log"
   },
   {
-    "name": "Generic File Traversal (C)",
+    "name": "SQL Injection - Boolean/Union Pattern",
+    "category": "sqli",
     "level": "high",
     "section": [
-      "headers",
-      "body",
-      "url"
+      "url",
+      "body"
     ],
-    "regex": "\\.\\.\\/|\\/\\.\\./",
-    "action": "maskblock"
+    "regex": "(?i)(union(?:\\s+all)?\\s+select|or\\s+1=1|and\\s+1=1|sleep\\(|benchmark\\(|waitfor\\s+delay)",
+    "action": "log"
   },
   {
-    "name": "Generic SQL Injection",
+    "name": "Secret File Enumeration (Env/Git/Backup)",
+    "category": "secret-harvest",
     "level": "high",
     "section": [
-      "headers",
-      "body",
       "url"
     ],
-    "regex": "\\b(?:SELECT|INSERT INTO|UPDATE|DELETE FROM|DROP TABLE|ALTER TABLE|CREATE TABLE|UNION(?: ALL)?|FROM|WHERE|AND|OR|JOIN|HAVING|WAITFOR|DELAY)\\b",
-    "action": "maskblock"
+    "regex": "(?i)(\\.env(\\.|$)|\\.git\\/config|docker-compose\\.ya?ml|dump\\.sql|config\\.json|\\.env\\.(local|prod|production|backup|example)|\\.bak$|\\.old$|\\.save$|\\.swp$)",
+    "action": "log"
   },
   {
-    "name": "Generic SQL Injection (A)",
-    "level": "high",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
-    "regex": "SELECT|FROM|WHERE|UPDATE|DELETE|INSERT INTO|VALUES|CREATE TABLE|ALTER TABLE|DROP TABLE|JOIN|INNER JOIN|LEFT JOIN|RIGHT JOIN|ON|GROUP BY|ORDER BY|HAVING",
-    "action": "maskblock"
-  },
-  {
-    "name": "WordPress Enumeration (A) -> Uploads",
-    "level": "high",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
-    "regex": "\\/wp-content\\/uploads\\/[0-9]{4}\\/[0-9]{2}\\/[a-zA-Z0-9\\-_]+\\.(?:php|txt|html|htm|js|css|png|jpg|jpeg|gif|bmp|ico|svg|ttf|woff|woff2|eot|otf|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|tar|gz|7z|exe|bin|mp3|mp4|wav|avi|mkv|mov|flv|wmv|apk|iso|img|dmg|torrent)\\/",
-    "action": "maskblock"
-  },
-  {
-    "name": "WordPress Enumeration (B) -> Themes",
-    "level": "high",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
-    "regex": "\\/wp-content\\/themes\\/[a-zA-Z0-9\\-_]+\\/",
-    "action": "maskblock"
-  },
-  {
-    "name": "Generic WordPress Enumeration",
-    "level": "high",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
-    "regex": "wp-(?:login|admin|includes|content|config|cron|trackback|register|comments|feed|wp-activate|wp-blog-header|wp-comments-post|wp-links-opml|wp-mail|wp-settings|wp-signup|wp-trackback|xmlrpc).php",
-    "action": "maskblock"
-  },
-  {
-    "name": "Generic WordPress Enumeration (A)",
-    "level": "high",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
-    "regex": "wp-(?:login|admin|includes|content|config|cron|trackback|register|comments|feed|wp-activate|wp-blog-header|wp-comments-post|wp-links-opml|wp-mail|wp-settings|wp-signup|wp-trackback|xmlrpc)",
-    "action": "maskblock"
-  },
-  {
-    "name": "Generic Hack Tool (A) -> SQLMap",
+    "name": "CMS Config & Backup Harvesting",
+    "category": "cms-recon",
     "level": "medium",
     "section": [
-      "headers"
-    ],
-    "regex": "sqlmap|sqlmapapi|sqlmapapi.py",
-    "action": "drop"
-  },
-  {
-    "name": "Generic Hack Tool (B) -> WPScan",
-    "level": "medium",
-    "section": [
-      "headers"
-    ],
-    "regex": "wpscan|wpscan.rb|wpscan-",
-    "action": "drop"
-  },
-  {
-    "name": "Generic Hack Tool (C) -> DirBuster",
-    "level": "medium",
-    "section": [
-      "headers"
-    ],
-    "regex": "dirbuster|dirbuster-",
-    "action": "drop"
-  },
-  {
-    "name": "Generic Admin Enumeration (A)",
-    "level": "medium",
-    "section": [
-      "headers",
-      "body",
       "url"
     ],
-    "regex": "admin(?:istrator)?|login|wp-(?:login|admin|includes|content|config|cron|trackback|register|comments|feed|wp-activate|wp-blog-header|wp-comments-post|wp-links-opml|wp-mail|wp-settings|wp-signup|wp-trackback|xmlrpc)",
-    "action": "drop"
+    "regex": "(?i)(wp-config\\.php(\\.|$)|configuration\\.php|sites\\/default\\/settings\\.php)",
+    "action": "log"
   },
   {
-    "name": "CVE-2014-6271 -> Shellshock",
+    "name": "PHPUnit eval-stdin RCE Probe",
+    "category": "rce-probe",
+    "level": "high",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)vendor\\/phpunit\\/phpunit\\/src\\/Util\\/PHP\\/eval-stdin\\.php",
+    "action": "log"
+  },
+  {
+    "name": "Generic Webshell Discovery",
+    "category": "webshell-scan",
+    "level": "medium",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)\\/(cmd|shell|r57|c99|admin|secure|info)\\.php$",
+    "action": "log"
+  },
+  {
+    "name": "Router / LuCI Exploit Probe",
+    "category": "iot-scan",
+    "level": "medium",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)\\/cgi-bin\\/luci",
+    "action": "log"
+  },
+  {
+    "name": "Shellshock Attempt",
+    "category": "rce-probe",
     "level": "high",
     "section": [
       "headers",
-      "body",
-      "url"
+      "body"
     ],
     "regex": "\\( *\\) *\\{ *: *; *\\}",
+    "action": "log"
+  },
+  {
+    "name": "F5 BIG-IP CVE-2020-5902 Probe",
+    "category": "appliance-exploit",
+    "level": "high",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)tmui|tmsh",
+    "action": "log"
+  },
+  {
+    "name": "Hack Tool - SQLMap",
+    "category": "scanner",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)sqlmap",
+    "action": "log"
+  },
+  {
+    "name": "Hack Tool - WPScan",
+    "category": "scanner",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)wpscan",
+    "action": "log"
+  },
+  {
+    "name": "Hack Tool - DirBuster",
+    "category": "scanner",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)dirbuster",
+    "action": "log"
+  },
+  {
+    "name": "Androxgh0st Malware Probe",
+    "category": "malware-scan",
+    "level": "high",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)androxgh0st",
+    "action": "log"
+  },
+  {
+    "name": "SSH Private Key Theft Attempt",
+    "category": "information-disclosure",
+    "level": "critical",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)/\\.ssh/id_",
     "action": "drop"
   },
   {
-    "name": "CVE-2020-5902 -> F5 BIG-IP",
-    "level": "high",
+    "name": "Scripting Library - Python Requests/HTTPX",
+    "category": "tooling-identification",
+    "level": "low",
     "section": [
-      "headers",
-      "body",
+      "headers"
+    ],
+    "regex": "(?i)python-(requests|httpx)",
+    "action": "log"
+  },
+  {
+    "name": "Scripting Library - Go HTTP Client",
+    "category": "tooling-identification",
+    "level": "low",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)Go-http-client",
+    "action": "log"
+  },
+  {
+    "name": "Scripting Library - NodeJS / Axios",
+    "category": "tooling-identification",
+    "level": "low",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)(axios/|node-fetch)",
+    "action": "log"
+  },
+  {
+    "name": "FOG Management Exploit Probe",
+    "category": "appliance-exploit",
+    "level": "medium",
+    "section": [
       "url"
     ],
-    "regex": "tmui|tmsh",
-    "action": "drop"
+    "regex": "(?i)/fog/management",
+    "action": "log"
+  },
+  {
+    "name": "CLI Tool - Curl",
+    "category": "tooling-identification",
+    "level": "low",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)^curl/",
+    "action": "log"
+  },
+  {
+    "name": "CLI Tool - Wget",
+    "category": "tooling-identification",
+    "level": "low",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)^Wget",
+    "action": "log"
+  },
+  {
+    "name": "Mass Scanner - ZGrab/Masscan",
+    "category": "infrastructure-scan",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)(zgrab|masscan)",
+    "action": "log"
+  },
+  {
+    "name": "Internet Indexer - Censys/Odin/NetScope",
+    "category": "crawler",
+    "level": "low",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)(CensysInspect|Odin|NetScope|visionheight)",
+    "action": "log"
+  },
+  {
+    "name": "Suspicious - Minimalist User-Agent",
+    "category": "protocol-anomaly",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "^(Mozilla/5.0|-|\\s*)$",
+    "action": "log"
+  },
+  {
+    "name": "Legacy Tooling - Java Runtime",
+    "category": "tooling-identification",
+    "level": "medium",
+    "section": [
+      "headers"
+    ],
+    "regex": "(?i)^Java/",
+    "action": "log"
   }
-  
 ]
