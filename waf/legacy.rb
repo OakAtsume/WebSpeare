@@ -151,10 +151,9 @@ class LegacyChecks
                   infraction = "URL: #{value}"
                   return {
                        triggered: true,
-                       overwrite: true,
+                       overwrite: false,
                        reason: rule["name"],
-                       payload: serverInstance.genReply(200,"Hi",serverInstance.mimeFor(".html")),
-                       code: 200
+                       payload: nil
                      }
                      
                 end

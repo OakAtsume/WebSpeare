@@ -393,33 +393,6 @@
     "ref",
     "target",
     "source"
-  ],
-  "return-shifter": {
-    "enabled": true,
-    "default": 200,
-    "chance": 0.50,
-    "return-codes": [
-      404,
-      403,
-      500,
-      201,
-      202,
-      301,
-      302,
-      303,
-      305,
-      400,
-      401,
-      402,
-      405,
-      406,
-      429,
-      503
-    ]
-  },
-  "backend-spoof": {
-    "time-min": 0.1,
-    "time-max": 4,
-    "enabled": true
-  }
+  ]
+  
 }

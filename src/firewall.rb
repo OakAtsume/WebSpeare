@@ -31,9 +31,12 @@ class Firewall
       #   :payload => nil/String,
       #   :code => Int : Only if overwrite is true.
       # }
-      
+      begin
       ruleReply = rule.call(request, @serverInstance)
+      rescue => e
+        puts("FAILED TO RUN RULE #{entry.inspect}\n#{e}\n#{e.backtrace().join("\n")}")
 
+      end
       # puts("Rule Reply: #{ruleReply}")
       if ruleReply[:triggered]
         return ruleReply

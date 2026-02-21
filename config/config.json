@@ -9,7 +9,7 @@
     "port": 8081
   },
   "graylog": {
-    "enabled": true,
+    "enabled": false,
     "host": "127.0.0.1",
     "port": 5000,
     "facility": "WebSpeare-Honeypot"
@@ -26,12 +26,17 @@
     "jsonpath": "logs/json/"
   },
   "security-txt": {
-    "enabled": false,
+    "enabled": true,
     "msg": [
       "# security.txt",
       "Contact: mailto:oak@801labs.org",
       "Discord: @OakAtsume",
       "Preferred-Languages: en, es"
     ]
+  },
+  "backend-spoof": {
+    "time-min": 0.1,
+    "time-max": 4,
+    "enabled": true
   }
 }

@@ -34,6 +34,11 @@ class HoneySet
           @id += 1
           loop do
             begin
+              if socket.closed?()
+                emit(:close, @id, socket)
+                break
+              end
+
               if IO.select([socket], nil, nil, 0.01)
                 data = socket.recv(@con[:buffer])
                 if data.nil? || data.empty?
@@ -202,19 +207,21 @@ class HoneySet
   end
 
   def genReply(code, body, mime, headers = {})
-		out = ""
-		out += "HTTP/1.1 #{code}\r\n"
-		out += "Content-Type: #{mime}\r\n"
-		out += "Content-Lenght: #{body.bytesize}"
-		headers.each do |k,v|
-			out += "#{key}: #{value}\r\n"
-		end
-		
-		out += "Connection: close\r\n"
-		out += "\r\n"
-		out += body
-		return out
-	end
+    out = ""
+    out += "HTTP/1.1 #{code}\r\n"
+    out += "Content-Type: #{mime}\r\n"
+    out += "Content-Lenght: #{body.bytesize}\r\n"
+    if !headers.empty?
+      headers.each do |k, v|
+        out += "#{key}: #{value}\r\n"
+      end
+    end
+
+    out += "Connection: close\r\n"
+    out += "\r\n"
+    out += body
+    return out
+  end
 
   # def reply(code, body, mime, headers = {})
   #   response = ""
@@ -234,7 +241,6 @@ class HoneySet
   #   response += body
   #   return response
   # end
-
 
   def mimeFor(path)
     case path.split(".")[-1]
