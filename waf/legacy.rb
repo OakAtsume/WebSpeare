@@ -81,7 +81,7 @@ class LegacyChecks
         end
         points = rule["section"]
         regex = Regexp.new(rule["regex"])
-        rule["name"] = "#{rule["name"]} [Legacy-Regex]" 
+        # rule["name"] = "#{rule["name"]} [Legacy-R" 
         # puts(">>[RULE] #{rule}")
         points.each do |point|
           case point
@@ -114,7 +114,7 @@ class LegacyChecks
             process = request[:path].downcase
             if regex.match?(process)
               infraction = "URL: #{process}"
-              puts(">>> Matched URL Regex: #{rule["regex"]} on #{process}")
+              # puts(">>> Matched URL Regex: #{rule["regex"]} on #{process}")
               return {
                        triggered: true,
                        overwrite: false,
