@@ -85,7 +85,7 @@ phpinfoDecoy = PHPInfoDecoy.new()
 # Method for Rule Data : Priority
 firewall.register(legacy.method(:legacyChecks), 900)
 firewall.register(redTailSpoofer.method(:runCheck), 101)
-firewall.register(phpinfoDecoy.method(:runCheck),102)
+firewall.register(phpinfoDecoy.method(:runCheck), 102)
 # firewall.register(testRule.method(:runTestRule), 101)
 
 # === FIREWALL END === #
@@ -108,25 +108,29 @@ firewall.register(phpinfoDecoy.method(:runCheck),102)
   # puts fwReply
   if fwReply[:triggered]
     # Hand control over to the Firewall event.
+    # request[:waf] = true
+    # request[:wafRule] = fwReply[:reason]
     request[:waf] = true
-    request[:wafRule] = fwReply[:reason]
+    request[:wafRule] = {
+      "name" => fwReply[:reason],
+    }
+    record.reqLogs(request)
 
     if fwReply[:overwrite] && fwReply[:payload] != nil
-      record.log(
-        level: :attacks,
-        message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]} (Firewall: #{fwReply[:reason]})",
-        code: fwReply[:code],
-      )
-      record.reqLogs(request)
-
       begin
         socket.write(fwReply[:payload])
         socket.close()
       rescue => e
         puts("Failed to send reply from firewall rule. #{fwReply.inspect}")
       end
-      next
     end
+
+    record.log(
+      level: :attacks,
+      message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]} (Firewall: #{fwReply[:reason]})",
+      code: fwReply[:code],
+    )
+    next
   end
 
   # Secure.txt handler
@@ -226,9 +230,8 @@ end
 
 # {:method=>"GET", :path=>"/", :version=>"HTTP/1.1", :headers=>{"host"=>"[REDACTED-PUBLIC-IP]:8081", "user-agent"=>"Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0", "accept"=>"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "accept-language"=>"en-US,en;q=0.5", "accept-encoding"=>"gzip, deflate, br, zstd", "connection"=>"keep-alive", "upgrade-insecure-requests"=>"1", "sec-fetch-dest"=>"document", "sec-fetch-mode"=>"navigate", "sec-fetch-site"=>"none", "sec-fetch-user"=>"?1", "dnt"=>"1", "sec-gpc"=>"1", "priority"=>"u=0, i"}, :raw_headers=>["Host: localhost:8081", "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language: en-US,en;q=0.5", "Accept-Encoding: gzip, deflate, br, zstd", "Connection: keep-alive", "Upgrade-Insecure-Requests: 1", "Sec-Fetch-Dest: document", "Sec-Fetch-Mode: navigate", "Sec-Fetch-Site: none", "Sec-Fetch-User: ?1", "DNT: 1", "Sec-GPC: 1", "Priority: u=0, i"], :malformed=>false, :body=>"", :params=>{}, :host=>"127.0.0.1", :timestamp=>1767686213}
 
-record.log(message: "Server started on #{config['server']['host']}:#{config['server']['port']}")
+record.log(message: "Server started on #{config["server"]["host"]}:#{config["server"]["port"]}")
 # host: config["server"]["host"],
 #   port: config["server"]["port"],
 
 @server.attach()
-
