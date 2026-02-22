@@ -207,6 +207,28 @@
     "action": "log"
   },
   {
+    "name": "Exploit - GPON Auth Bypass (CVE-2018-10561)",
+    "category": "authentication-bypass",
+    "level": "critical",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)/GponForm/.*?\\?images/",
+    "action": "drop"
+  },
+  {
+    "name": "Exploit - GPON Command Injection (CVE-2018-10562)",
+    "category": "remote-code-execution",
+    "level": "critical",
+    "section": [
+      "url",
+      "body",
+      "headers"
+    ],
+    "regex": "(?i)(/GponForm/diag_Form|XWebPageName.*?dest_host.*?[;`\\$])",
+    "action": "drop"
+  },
+  {
     "name": "CLI Tool - Curl",
     "category": "tooling-identification",
     "level": "low",
