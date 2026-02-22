@@ -265,7 +265,7 @@
     "section": [
       "headers"
     ],
-    "regex": "(?i)(CensysInspect|Odin|NetScope|visionheight)",
+    "regex": "(?i)(CensysInspect|Odin|NetScope|visionheight|Palo Alto|RootEvidence)",
     "action": "log"
   },
   {
