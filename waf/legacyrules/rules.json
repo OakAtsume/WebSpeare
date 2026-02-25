@@ -297,6 +297,6 @@
     ],
     "regex": "(?i)get_portal_info",
     "action": "drop"
-  },
+  }
   
 ]
