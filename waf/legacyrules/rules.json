@@ -297,6 +297,46 @@
     ],
     "regex": "(?i)get_portal_info",
     "action": "drop"
-  }
+  },
+  {
+  "name": "Exploit Attempt - Ivanti CVE-2024-21887",
+  "category": "command-injection",
+  "level": "critical",
+  "section": ["url","body"],
+  "regex": "(?i)/api/v1/totp/user-backup-code|\\$\\(|`|;\\s*(wget|curl|sh)",
+  "action": "log"
+},
+  {
+  "name": "Exploit Attempt - TP-Link CVE-2023-1389",
+  "category": "command-injection",
+  "level": "critical",
+  "section": ["url","body"],
+  "regex": "(?i)country=.*(;|\\$\\(|`)",
+  "action": "log"
+},
+  {
+  "name": "Exploit Attempt - Citrix NetScaler CVE-2023-3519",
+  "category": "path-traversal",
+  "level": "critical",
+  "section": ["url"],
+  "regex": "(?i)/vpn/\\.\\./|%2e%2e%2f",
+  "action": "log"
+},
+  {
+  "name": "Exploit Attempt - FortiOS CVE-2023-27997",
+  "category": "buffer-overflow",
+  "level": "critical",
+  "section": ["url","body"],
+  "regex": "(?i)/remote/login|enc=",
+  "action": "log"
+},
+  {
+  "name": "Exploit Attempt - Zyxel Firewall CVE-2023-28771",
+  "category": "remote-code-execution",
+  "level": "critical",
+  "section": ["url"],
+  "regex": "(?i)/ztp/cgi-bin/handler",
+  "action": "log"
+}
   
 ]
