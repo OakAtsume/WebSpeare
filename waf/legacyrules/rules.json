@@ -287,5 +287,16 @@
     ],
     "regex": "(?i)^Java/",
     "action": "log"
-  }
+  },
+  {
+    "name": "Exploit - BeyondTrust RCE CVE-2026-1731",
+    "category": "remote-code-execution",
+    "level": "critical",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)get_portal_info",
+    "action": "drop"
+  },
+  
 ]
