@@ -3,10 +3,7 @@
     "name": "XSS - Script & Event Injection",
     "category": "xss",
     "level": "medium",
-    "section": [
-      "url",
-      "body"
-    ],
+    "section": ["url", "body"],
     "regex": "(?i)(<script.*?>.*?</script>|javascript:|data:text\\/html|vbscript:|on\\w+\\s*=)",
     "action": "log"
   },
@@ -14,11 +11,7 @@
     "name": "Non-Printable Control Characters",
     "category": "protocol-anomaly",
     "level": "medium",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
+    "section": ["headers", "body", "url"],
     "regex": "[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]",
     "action": "log"
   },
@@ -26,11 +19,7 @@
     "name": "Directory Traversal Attempt",
     "category": "lfi-traversal",
     "level": "high",
-    "section": [
-      "headers",
-      "body",
-      "url"
-    ],
+    "section": ["headers", "body", "url"],
     "regex": "(?i)(\\.\\./|%2e%2e%2f|%252e%252e%252f)",
     "action": "log"
   },
@@ -38,10 +27,7 @@
     "name": "SQL Injection - Boolean/Union Pattern",
     "category": "sqli",
     "level": "high",
-    "section": [
-      "url",
-      "body"
-    ],
+    "section": ["url", "body"],
     "regex": "(?i)(union(?:\\s+all)?\\s+select|or\\s+1=1|and\\s+1=1|sleep\\(|benchmark\\(|waitfor\\s+delay)",
     "action": "log"
   },
@@ -49,9 +35,7 @@
     "name": "Secret File Enumeration (Env/Git/Backup)",
     "category": "secret-harvest",
     "level": "high",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)(\\.env(\\.|$)|\\.git\\/config|docker-compose\\.ya?ml|dump\\.sql|config\\.json|\\.env\\.(local|prod|production|backup|example)|\\.bak$|\\.old$|\\.save$|\\.swp$)",
     "action": "log"
   },
@@ -59,9 +43,7 @@
     "name": "CMS Config & Backup Harvesting",
     "category": "cms-recon",
     "level": "medium",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)(wp-config\\.php(\\.|$)|configuration\\.php|sites\\/default\\/settings\\.php)",
     "action": "log"
   },
@@ -69,9 +51,7 @@
     "name": "PHPUnit eval-stdin RCE Probe",
     "category": "rce-probe",
     "level": "high",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)vendor\\/phpunit\\/phpunit\\/src\\/Util\\/PHP\\/eval-stdin\\.php",
     "action": "log"
   },
@@ -79,9 +59,7 @@
     "name": "Generic Webshell Discovery",
     "category": "webshell-scan",
     "level": "medium",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)\\/(cmd|shell|r57|c99|admin|secure|info)\\.php$",
     "action": "log"
   },
@@ -89,9 +67,7 @@
     "name": "Router / LuCI Exploit Probe",
     "category": "iot-scan",
     "level": "medium",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)\\/cgi-bin\\/luci",
     "action": "log"
   },
@@ -99,10 +75,7 @@
     "name": "Shellshock Attempt",
     "category": "rce-probe",
     "level": "high",
-    "section": [
-      "headers",
-      "body"
-    ],
+    "section": ["headers", "body"],
     "regex": "\\( *\\) *\\{ *: *; *\\}",
     "action": "log"
   },
@@ -110,9 +83,7 @@
     "name": "F5 BIG-IP CVE-2020-5902 Probe",
     "category": "appliance-exploit",
     "level": "high",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)tmui|tmsh",
     "action": "log"
   },
@@ -120,9 +91,7 @@
     "name": "Hack Tool - SQLMap",
     "category": "scanner",
     "level": "medium",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)sqlmap",
     "action": "log"
   },
@@ -130,9 +99,7 @@
     "name": "Hack Tool - WPScan",
     "category": "scanner",
     "level": "medium",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)wpscan",
     "action": "log"
   },
@@ -140,9 +107,7 @@
     "name": "Hack Tool - DirBuster",
     "category": "scanner",
     "level": "medium",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)dirbuster",
     "action": "log"
   },
@@ -150,9 +115,7 @@
     "name": "Androxgh0st Malware Probe",
     "category": "malware-scan",
     "level": "high",
-    "section": [
-      "body"
-    ],
+    "section": ["body"],
     "regex": "(?i)androxgh0st",
     "action": "log"
   },
@@ -160,9 +123,7 @@
     "name": "SSH Private Key Theft Attempt",
     "category": "information-disclosure",
     "level": "critical",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)/\\.ssh/id_",
     "action": "drop"
   },
@@ -170,9 +131,7 @@
     "name": "Scripting Library - Python Requests/HTTPX",
     "category": "tooling-identification",
     "level": "low",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)python-(requests|httpx)",
     "action": "log"
   },
@@ -180,9 +139,7 @@
     "name": "Scripting Library - Go HTTP Client",
     "category": "tooling-identification",
     "level": "low",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)Go-http-client",
     "action": "log"
   },
@@ -190,9 +147,7 @@
     "name": "Scripting Library - NodeJS / Axios",
     "category": "tooling-identification",
     "level": "low",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)(axios/|node-fetch)",
     "action": "log"
   },
@@ -200,9 +155,7 @@
     "name": "FOG Management Exploit Probe",
     "category": "appliance-exploit",
     "level": "medium",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)/fog/management",
     "action": "log"
   },
@@ -210,9 +163,7 @@
     "name": "Exploit - GPON Auth Bypass (CVE-2018-10561)",
     "category": "authentication-bypass",
     "level": "critical",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)/GponForm/.*?\\?images/",
     "action": "drop"
   },
@@ -220,11 +171,7 @@
     "name": "Exploit - GPON Command Injection (CVE-2018-10562)",
     "category": "remote-code-execution",
     "level": "critical",
-    "section": [
-      "url",
-      "body",
-      "headers"
-    ],
+    "section": ["url", "body", "headers"],
     "regex": "(?i)(/GponForm/diag_Form|XWebPageName.*?dest_host.*?[;`\\$])",
     "action": "drop"
   },
@@ -232,9 +179,7 @@
     "name": "CLI Tool - Curl",
     "category": "tooling-identification",
     "level": "low",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)^curl/",
     "action": "log"
   },
@@ -242,9 +187,7 @@
     "name": "CLI Tool - Wget",
     "category": "tooling-identification",
     "level": "low",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)^Wget",
     "action": "log"
   },
@@ -252,9 +195,7 @@
     "name": "Mass Scanner - ZGrab/Masscan",
     "category": "infrastructure-scan",
     "level": "medium",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)(zgrab|masscan)",
     "action": "log"
   },
@@ -262,9 +203,7 @@
     "name": "Internet Indexer - Censys/Odin/NetScope",
     "category": "crawler",
     "level": "low",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)(CensysInspect|Odin|NetScope|visionheight|Palo Alto|RootEvidence)",
     "action": "log"
   },
@@ -272,9 +211,7 @@
     "name": "Suspicious - Minimalist User-Agent",
     "category": "protocol-anomaly",
     "level": "medium",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "^(Mozilla/5.0|-|\\s*)$",
     "action": "log"
   },
@@ -282,9 +219,7 @@
     "name": "Legacy Tooling - Java Runtime",
     "category": "tooling-identification",
     "level": "medium",
-    "section": [
-      "headers"
-    ],
+    "section": ["headers"],
     "regex": "(?i)^Java/",
     "action": "log"
   },
@@ -292,51 +227,558 @@
     "name": "Exploit - BeyondTrust RCE CVE-2026-1731",
     "category": "remote-code-execution",
     "level": "critical",
-    "section": [
-      "url"
-    ],
+    "section": ["url"],
     "regex": "(?i)get_portal_info",
     "action": "drop"
   },
   {
-  "name": "Exploit Attempt - Ivanti CVE-2024-21887",
-  "category": "command-injection",
-  "level": "critical",
-  "section": ["url","body"],
-  "regex": "(?i)/api/v1/totp/user-backup-code|\\$\\(|`|;\\s*(wget|curl|sh)",
-  "action": "log"
-},
+    "name": "Exploit Attempt - Ivanti CVE-2024-21887",
+    "category": "command-injection",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)/api/v1/totp/user-backup-code|\\$\\(|`|;\\s*(wget|curl|sh)",
+    "action": "log"
+  },
   {
-  "name": "Exploit Attempt - TP-Link CVE-2023-1389",
-  "category": "command-injection",
-  "level": "critical",
-  "section": ["url","body"],
-  "regex": "(?i)country=.*(;|\\$\\(|`)",
-  "action": "log"
-},
+    "name": "Exploit Attempt - TP-Link CVE-2023-1389",
+    "category": "command-injection",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)country=.*(;|\\$\\(|`)",
+    "action": "log"
+  },
   {
-  "name": "Exploit Attempt - Citrix NetScaler CVE-2023-3519",
-  "category": "path-traversal",
-  "level": "critical",
-  "section": ["url"],
-  "regex": "(?i)/vpn/\\.\\./|%2e%2e%2f",
-  "action": "log"
-},
+    "name": "Exploit Attempt - Citrix NetScaler CVE-2023-3519",
+    "category": "path-traversal",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/vpn/\\.\\./|%2e%2e%2f",
+    "action": "log"
+  },
   {
-  "name": "Exploit Attempt - FortiOS CVE-2023-27997",
-  "category": "buffer-overflow",
-  "level": "critical",
-  "section": ["url","body"],
-  "regex": "(?i)/remote/login|enc=",
-  "action": "log"
-},
+    "name": "Exploit Attempt - FortiOS CVE-2023-27997",
+    "category": "buffer-overflow",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)/remote/login|enc=",
+    "action": "log"
+  },
   {
-  "name": "Exploit Attempt - Zyxel Firewall CVE-2023-28771",
-  "category": "remote-code-execution",
-  "level": "critical",
-  "section": ["url"],
-  "regex": "(?i)/ztp/cgi-bin/handler",
-  "action": "log"
-}
-  
+    "name": "Exploit Attempt - Zyxel Firewall CVE-2023-28771",
+    "category": "remote-code-execution",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/ztp/cgi-bin/handler",
+    "action": "log"
+  },
+
+  {
+    "_note": "── NEW RULES BELOW ── derived from observed honeypot attack data + common scanner patterns",
+
+    "name": "Scanner - Nmap NSE (User-Agent)",
+    "category": "scanner:nmap",
+    "level": "critical",
+    "section": ["headers"],
+    "regex": "(?i)(nmap|NmapNSE)",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nmap NSE HTTP Canary Path",
+    "category": "scanner:nmap",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/(nmap(lower|upper)check\\d+|Nmap/folder/check\\d+)",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nmap NSE Trinity Bait Path",
+    "category": "scanner:nmap",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)(nice%20ports|Tri(?:%6E|n)ity\\.txt)",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nmap NSE Atlassian Probe",
+    "category": "scanner:nmap",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(?:confluence/)?rest/applinks/[\\d.]+/manifest",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nmap NSE SDK POST Probe",
+    "category": "scanner:nmap",
+    "level": "high",
+    "section": ["url"],
+    "regex": "^/sdk$",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nmap NSE DNI API Probe",
+    "category": "scanner:nmap",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/dniapi/userInfos",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nuclei / ProjectDiscovery",
+    "category": "scanner:nuclei",
+    "level": "high",
+    "section": ["headers"],
+    "regex": "(?i)(nuclei|projectdiscovery)",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Nikto",
+    "category": "scanner:nikto",
+    "level": "high",
+    "section": ["headers"],
+    "regex": "(?i)nikto",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Acunetix / Invicti",
+    "category": "scanner:acunetix",
+    "level": "high",
+    "section": ["headers"],
+    "regex": "(?i)(acunetix|invicti)",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Burp Suite",
+    "category": "scanner:burp",
+    "level": "high",
+    "section": ["headers"],
+    "regex": "(?i)burpsuite",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - libssh2 HTTP Probe (dual-service scanner)",
+    "category": "scanner:nmap",
+    "level": "high",
+    "section": ["headers"],
+    "regex": "(?i)^libssh2/",
+    "action": "log"
+  },
+
+  {
+    "name": "VPN Fingerprint - Cisco ASA (CVE-2023-20269 / mass targeting)",
+    "category": "vpn-probe:cisco-asa",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/\\+CSCOE\\+/logon\\.html",
+    "action": "log"
+  },
+  {
+    "name": "VPN Fingerprint - Pulse Secure / Ivanti Connect (CVE-2024-21893 family)",
+    "category": "vpn-probe:pulse-secure",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/dana(-na|-cached)/",
+    "action": "log"
+  },
+  {
+    "name": "VPN Fingerprint - Versa Networks SD-WAN",
+    "category": "vpn-probe:versa",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/versa/login",
+    "action": "log"
+  },
+
+  {
+    "name": "Network Device Probe - Cisco ISE",
+    "category": "network-device-probe:cisco-ise",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/ise/img/rm-logo",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - Cisco Smart License Utility",
+    "category": "network-device-probe:cisco-cslu",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/cslu/v[0-9]+/core/conf",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - Barracuda / ZTM Load Balancer",
+    "category": "network-device-probe:load-balancer",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/apps/zxtm/login\\.cgi",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - Zyxel / Generic CGI Param",
+    "category": "network-device-probe:iot",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/cgi-bin/param\\.cgi",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - QNAP NAS Auth CGI",
+    "category": "network-device-probe:nas",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/cgi-bin/authLogin\\.cgi",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - Generic CGI Info",
+    "category": "network-device-probe:generic",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/cgi-bin/info\\.cgi",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - Clavister / CGI Mod Header Logo",
+    "category": "network-device-probe:generic",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/cgi-mod/header_logo\\.cgi",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - Webportal CGI (Router / UTM)",
+    "category": "network-device-probe:router",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/webportal\\.cgi",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - EVOX / RouterOS",
+    "category": "network-device-probe:router",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/evox/about",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - eONWeb (Advantech / ICS)",
+    "category": "network-device-probe:ics",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/css/eonweb\\.css",
+    "action": "log"
+  },
+  {
+    "name": "Network Device Probe - vmRNI (VMware Aria / vRNI)",
+    "category": "network-device-probe:vmware",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/api/vip/i18n/api/v[0-9]+/translation/products/vRNIUI",
+    "action": "log"
+  },
+
+  {
+    "name": "IP Camera Probe - UPnP / ONVIF Device Description",
+    "category": "iot-scan:ipcam",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(IPCamDesc|devicedesc)\\.xml",
+    "action": "log"
+  },
+
+  {
+    "name": "CMS Fingerprint - Joomla XML Manifest",
+    "category": "cms-recon:joomla",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/administrator/manifests/files/joomla\\.xml",
+    "action": "log"
+  },
+  {
+    "name": "CMS Fingerprint - Joomla Language File",
+    "category": "cms-recon:joomla",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/language/en-GB/en-GB\\.xml",
+    "action": "log"
+  },
+  {
+    "name": "CMS Fingerprint - Magento Version Endpoint",
+    "category": "cms-recon:magento",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/magento_version$",
+    "action": "log"
+  },
+  {
+    "name": "CMS Fingerprint - Adobe ColdFusion Admin",
+    "category": "cms-recon:coldfusion",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/CFIDE/",
+    "action": "log"
+  },
+  {
+    "name": "CMS Fingerprint - Atlassian Confluence",
+    "category": "cms-recon:confluence",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/confluence/",
+    "action": "log"
+  },
+
+  {
+    "name": "Security Platform Probe - Trend Micro OfficeScan",
+    "category": "security-product-probe:trendmicro",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/officescan/console/",
+    "action": "log"
+  },
+  {
+    "name": "Security Platform Probe - Cisco ISE Admin Portal",
+    "category": "security-product-probe:cisco-ise",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/admin/reports/(status|updates)",
+    "action": "log"
+  },
+
+  {
+    "name": "Monitoring Platform Probe - GeoServer (CVE-2024-36401 targeting)",
+    "category": "monitoring-probe:geoserver",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/geoserver/",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - Centreon",
+    "category": "monitoring-probe:centreon",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/centreon/api/",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - Pandora FMS",
+    "category": "monitoring-probe:pandorafms",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/pandora_console/",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - Apache Kylin",
+    "category": "monitoring-probe:kylin",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/kylin/",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - AppleHelpdesk WebObjects",
+    "category": "monitoring-probe:helpdesk",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/helpdesk/WebObjects/Helpdesk\\.woa",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - Cluster Management API",
+    "category": "monitoring-probe:cluster",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/cluster/list\\.query",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - r-seenet",
+    "category": "monitoring-probe:r-seenet",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/r-seenet/",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - elfinder File Manager",
+    "category": "monitoring-probe:elfinder",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/css/elfinder\\.min\\.css",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - TOS System",
+    "category": "monitoring-probe:tos",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/tos/index\\.php",
+    "action": "log"
+  },
+  {
+    "name": "Monitoring Platform Probe - LMS Database Exposure",
+    "category": "monitoring-probe:lms",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/lms/db$",
+    "action": "log"
+  },
+
+  {
+    "name": "Mail Server Probe - Microsoft OWA",
+    "category": "mail-probe:owa",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)^/owa/",
+    "action": "log"
+  },
+
+  {
+    "name": "Version Disclosure Probe - Generic API Version Endpoints",
+    "category": "recon:version-probe",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/(api/v[0-9.]+/about|api/version|api/server/version|api/v1/check-version|allversions|versions|xml/info\\.xml)$",
+    "action": "log"
+  },
+  {
+    "name": "Version Disclosure Probe - Build Artefact Leakage",
+    "category": "recon:version-probe",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(pom\\.xml|build\\.gradle|CHANGELOG\\.txt)$",
+    "action": "log"
+  },
+  {
+    "name": "Version Disclosure Probe - Environment / Config Dump",
+    "category": "recon:version-probe",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(api/v[0-9.]+/environment|config|info\\.asp|start\\.asp)$",
+    "action": "log"
+  },
+  {
+    "name": "Version Disclosure Probe - JSA / ASP Web App Fingerprint",
+    "category": "recon:version-probe",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/(menu\\.jsa|index\\.jsa|menu\\.php|human\\.aspx|login\\.aspx)$",
+    "action": "log"
+  },
+  {
+    "name": "Version Disclosure Probe - Juniper / ZLD Product Spec",
+    "category": "recon:version-probe",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/ext-js/app/common/zld_product_spec\\.js",
+    "action": "log"
+  },
+  {
+    "name": "Version Disclosure Probe - Hitachi / OEM Validation JS",
+    "category": "recon:version-probe",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/javascript/validation/OEM\\.js",
+    "action": "log"
+  },
+  {
+    "name": "Version Disclosure Probe - WebApp UI String (Ruckus / Comm Scope)",
+    "category": "recon:version-probe",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/WebApp/js/UI_String\\.js",
+    "action": "log"
+  },
+
+  {
+    "name": "Log4Shell - JNDI Injection in URL",
+    "category": "rce-probe:log4shell",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)\\$\\{jndi:(ldap|rmi|dns|iiop|corba|nis)s?://",
+    "action": "drop"
+  },
+  {
+    "name": "Log4Shell - JNDI Injection in Headers",
+    "category": "rce-probe:log4shell",
+    "level": "critical",
+    "section": ["headers"],
+    "regex": "(?i)\\$\\{(jndi|lower:|upper:|:-)",
+    "action": "drop"
+  },
+  {
+    "name": "Spring4Shell - ClassLoader RCE Probe (CVE-2022-22965)",
+    "category": "rce-probe:spring4shell",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)class\\.module\\.classLoader|ClassLoader",
+    "action": "log"
+  },
+
+  {
+    "name": "Exploit - GeoServer OGC RCE (CVE-2024-36401)",
+    "category": "rce-probe:geoserver",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/geoserver/web/wicket/bookmarkable/org\\.geoserver\\.web\\.AboutGeoServerPage",
+    "action": "log"
+  },
+  {
+    "name": "Exploit - Apache Struts RCE Probe (OGNL injection)",
+    "category": "rce-probe:struts",
+    "level": "critical",
+    "section": ["url", "body", "headers"],
+    "regex": "(?i)(%\\{|\\$\\{|#\\{).{0,50}(exec|Runtime|process|invoke|getClass)",
+    "action": "log"
+  },
+  {
+    "name": "Exploit - workplace.home.action Struts Indicator",
+    "category": "rce-probe:struts",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/workplace/home\\.action",
+    "action": "log"
+  },
+  {
+    "name": "Exploit - Inicio.php / LFI Indicator (Latin-targeted scans)",
+    "category": "webshell-scan",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/inicio\\.php$",
+    "action": "log"
+  },
+
+  {
+    "name": "Internet Indexer - Shodan",
+    "category": "crawler",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)shodan",
+    "action": "log"
+  },
+  {
+    "name": "Internet Indexer - BinaryEdge / Natlas",
+    "category": "crawler",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)(binaryedge|natlas)",
+    "action": "log"
+  },
+  {
+    "name": "Internet Indexer - Shadowserver",
+    "category": "crawler",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)shadowserver",
+    "action": "log"
+  },
+  {
+    "name": "Internet Indexer - Stretchoid / Intrinsec",
+    "category": "crawler",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)(stretchoid|intrinsec)",
+    "action": "log"
+  }
 ]
