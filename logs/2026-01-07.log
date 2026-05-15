@@ -1,0 +1,2 @@
+[03:59:50] [HTTP] GET /wp-admin.php HTTP/1.1 Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0 B(0) {"q"=>"<script>alert(1)</script>"} 127.0.0.1
+  200

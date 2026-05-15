@@ -10,12 +10,9 @@
   },
   "graylog": {
     "enabled": false,
-    "host": "192.168.67.1",
-    "port": 5000,
+    "host": "127.0.0.1",
+    "port": 8080,
     "facility": "WebSpeare-Honeypot"
-  },
-  "waf": {
-    "rules": "config/waf/rules.json"
   },
   "web": {
     "poems": "config/poems.json",
@@ -29,12 +26,17 @@
     "jsonpath": "logs/json/"
   },
   "security-txt": {
-    "enabled": false,
+    "enabled": true,
     "msg": [
       "# security.txt",
       "Contact: mailto:oak@801labs.org",
       "Discord: @OakAtsume",
       "Preferred-Languages: en, es"
     ]
+  },
+  "backend-spoof": {
+    "time-min": 0.1,
+    "time-max": 4,
+    "enabled": true
   }
 }
