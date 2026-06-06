@@ -173,12 +173,15 @@ class HoneySet
 
       if @con[:reverseProxy] # Are we using a reverse proxy?
         if request[:host] == "127.0.0.1" || request[:host] == "0.0.0.0" # If the host is localhost
-          if request[:headers].key?("x-forwarded-for") || request[:headers].key?("x-real-ip")
-            request[:headers]["x-forwarded-for"] = request[:headers]["x-forwarded-for"] || request[:headers]["x-real-ip"] # Get the IP address from the reverse proxy
-            request[:host] = request[:headers]["x-forwarded-for"] # Set the host to the IP address from the reverse proxy
+          if request[:headers].key?("webspeare-nginx-real-ip")
+            # request[:headers]["x-forwarded-for"] = request[:headers]["x-forwarded-for"] || request[:headers]["x-real-ip"] # Get the IP address from the reverse proxy
+            request[:host] = request[:headers]["webspeare-nginx-real-ip"] # Set the host to the IP address from the reverse proxy
           end
+          request[:headers].remove("webspeare-nginx-real-ip")
+
         end
       end
+
 
       if !request[:path].nil?
         if request[:path].include?("?")
