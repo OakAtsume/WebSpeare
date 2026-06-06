@@ -1,0 +1,159 @@
+[
+  {
+    "_comment": "Batch 2 — derived from the DO-US/New-York honeypot logs (2026-01 .. 2026-06). Body-based exploit signatures + content-discovery classifiers for traffic the existing ruleset did not cover. Counts in names are approximate observed hits."
+  },
+  {
+    "name": "Cloud Metadata SSRF - IMDS Credential Theft",
+    "category": "ssrf:cloud-metadata",
+    "level": "critical",
+    "section": [
+      "url",
+      "body",
+      "headers"
+    ],
+    "regex": "(?i)(169\\.254\\.169\\.254|metadata\\.google\\.internal|/latest/meta-data/|/computeMetadata/|/latest/api/token)",
+    "action": "drop"
+  },
+  {
+    "name": "Path Traversal - Malicious Upload Filename",
+    "category": "lfi-traversal:upload",
+    "level": "high",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)filename\\s*=\\s*\"[^\"]*\\.\\.[/\\\\]",
+    "action": "log"
+  },
+  {
+    "name": "Path Traversal - Obfuscated / Multi-Encoded",
+    "category": "lfi-traversal:obfuscated",
+    "level": "high",
+    "section": [
+      "url",
+      "body"
+    ],
+    "regex": "(?i)(\\.{4,}(/|%2f)|\\.\\.(%2f|%5c|%252f|%255c|%25252f)|%25252e|%252e%252e|%c0%ae)",
+    "action": "log"
+  },
+  {
+    "name": "WordPress XML-RPC Abuse (multicall / getUsersBlogs)",
+    "category": "cms-recon:wordpress-xmlrpc",
+    "level": "high",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)<methodName>\\s*(system\\.multicall|pingback\\.ping|wp\\.getUsersBlogs)",
+    "action": "log"
+  },
+  {
+    "name": "XML External Entity (XXE) Injection",
+    "category": "injection:xxe",
+    "level": "high",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)<!ENTITY\\s+\\S+\\s+(SYSTEM|PUBLIC)|<!DOCTYPE[^>]+\\[<!ENTITY",
+    "action": "log"
+  },
+  {
+    "name": "Kubernetes Admission Controller Probe",
+    "category": "recon:kubernetes",
+    "level": "medium",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)\"kind\"\\s*:\\s*\"AdmissionReview\"|admission\\.k8s\\.io",
+    "action": "log"
+  },
+  {
+    "name": "VPN Fingerprint - Cisco AnyConnect config-auth",
+    "category": "vpn-probe:cisco-anyconnect",
+    "level": "medium",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)<config-auth\\b",
+    "action": "log"
+  },
+  {
+    "name": "Java Deserialization - Fastjson/Jackson Gadget",
+    "category": "rce-probe:deserialization",
+    "level": "critical",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)(JdbcRowSetImpl|TemplatesImpl|\"@type\"\\s*:\\s*\"(java|javax|com\\.sun|org\\.apache|ch\\.qos)\\.)",
+    "action": "log"
+  },
+  {
+    "name": "Server-Side Template Injection (SSTI)",
+    "category": "injection:ssti",
+    "level": "high",
+    "section": [
+      "url",
+      "body"
+    ],
+    "regex": "(?i)([#$]\\{\\s*\\d+\\s*[*+]\\s*\\d+|\\{\\{\\s*\\d+\\s*[*+]\\s*\\d+|\\$\\{\\s*T\\(|\\{\\{\\s*(config|self|request|session)\\b)",
+    "action": "log"
+  },
+  {
+    "name": "Cryptominer - Stratum getwork Probe",
+    "category": "malware:cryptominer",
+    "level": "medium",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)\"method\"\\s*:\\s*\"(getwork|mining\\.(subscribe|authorize)|eth_(submit|get)Work)\"",
+    "action": "log"
+  },
+  {
+    "name": "Botnet Command Marker (Hadoop YARN / Mirai)",
+    "category": "malware:botnet",
+    "level": "medium",
+    "section": [
+      "body"
+    ],
+    "regex": "(?i)(need_fuck=yes|rand[^=]{0,4}=_tools)",
+    "action": "log"
+  },
+  {
+    "name": "Discovery - Login / Auth Endpoint Enumeration",
+    "category": "recon:login-discovery",
+    "level": "low",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)^/([a-z]{1,12}[-_/]?)?(login|signin|sign-in|logon|securelogin|login[-_]secure)(\\.php|\\.aspx|\\.jsp)?/?$|^/(auth|authentication|authorize|forgot-password|reset-password|change-password)/?$",
+    "action": "log"
+  },
+  {
+    "name": "Discovery - Admin Panel Enumeration",
+    "category": "recon:admin-discovery",
+    "level": "low",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)^/(admin[0-9]*|administrator|adminarea|controlpanel|accesspanel|dashboard|cpanel|webui|superuser|miscadmin|backend|manage)/?$",
+    "action": "log"
+  },
+  {
+    "name": "Discovery - Webshell / Upload Endpoint Enumeration",
+    "category": "recon:webshell-discovery",
+    "level": "medium",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)^/((img/|file[-_]?)?upload(s|_file)?|files/upload|shell|cmd|sh\\.php|c99|r57|webshell)/?$",
+    "action": "log"
+  },
+  {
+    "name": "Discovery - Sensitive Data Endpoint Enumeration",
+    "category": "recon:data-discovery",
+    "level": "low",
+    "section": [
+      "url"
+    ],
+    "regex": "(?i)^/(secrets?|passwd(\\.txt)?|data_dump|user_list|logfile|dump|backup)/?$",
+    "action": "log"
+  }
+]
