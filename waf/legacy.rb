@@ -69,12 +69,28 @@ class LegacyChecks
 
     infraction = ""
 
-    begin
-      @rules.each do |rule|
+    # Decode the URL-encoded path ONCE, defensively. If an attacker sends a
+    # deliberately broken %-sequence (e.g. /%zz/../../etc/passwd) the decode
+    # raises ArgumentError; we must swallow it here so it can't abort the whole
+    # rule loop and let the rest of the payload slip past unchecked.
+    decodedPath = nil
+    if !request[:path].nil? && request[:path].include?("%")
+      begin
+        decodedPath = URI.decode_www_form_component(request[:path]).downcase
+      rescue ArgumentError
+        decodedPath = nil # Undecodable for us means undecodable for the app too.
+      end
+    end
+
+    @rules.each do |rule|
+      # Each rule runs in its own rescue so a single bad regex/encoding can't
+      # disable every rule that follows it.
+      begin
         # puts(">>[RULE] #{rule}")
 
         if rule.class == Array
           puts "Legacy Rule is an Array,#{rule}"
+          next
         elsif rule.class != Hash
           puts "Legacy Rule is not a Hash, #{rule}"
           next
@@ -124,25 +140,18 @@ class LegacyChecks
 
             end
 
-            # If the path contains encoding, decode it
-            # Sometimes attackers will encode the URL with invalid data.
-            # This can break the decoder and cause an error.
-            # But that's okay, if the WaF can't decode it, neither will the application.
-
-            if !request[:path].nil?
-              if request[:path].include?("%")
-                process = URI.decode_www_form_component(request[:path]).downcase
-                if regex.match?(process)
-                  infraction = "URL: #{process} (Decoded)"
-                  return {
+            # If the path contained encoding, match against the pre-decoded
+            # copy too. Attackers sometimes encode payloads with invalid data;
+            # that's fine — if the WAF can't decode it, neither can the app, and
+            # decodedPath stays nil so we simply skip this branch.
+            if !decodedPath.nil? && regex.match?(decodedPath)
+              infraction = "URL: #{decodedPath} (Decoded)"
+              return {
                        triggered: true,
                        overwrite: false,
                        reason: rule["name"],
                        payload: nil,
                      }
-                     
-                end
-              end
             end
 
             if request[:params].size > 0
@@ -163,10 +172,10 @@ class LegacyChecks
             next
           end
         end
+      rescue => e
+        puts(">>> #{e} (#{e.backtrace.join("\n")})")
+        next # Skip the offending rule, keep checking the rest.
       end
-    rescue => e
-      puts(">>> #{e} (#{e.backtrace.join("\n")})")
-      # exit 1
     end
     return {
              triggered: false,

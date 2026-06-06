@@ -35,10 +35,11 @@ class Firewall
       ruleReply = rule.call(request, @serverInstance)
       rescue => e
         puts("FAILED TO RUN RULE #{entry.inspect}\n#{e}\n#{e.backtrace().join("\n")}")
-
+        # Fail safe: a crashing rule must not take down the request handler.
+        ruleReply = { triggered: false, overwrite: false, reason: nil, payload: nil }
       end
       # puts("Rule Reply: #{ruleReply}")
-      if ruleReply[:triggered]
+      if ruleReply && ruleReply[:triggered]
         return ruleReply
       end
     end

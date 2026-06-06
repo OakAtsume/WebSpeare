@@ -1,0 +1,204 @@
+[
+  {
+    "_comment": "Rules derived from Live-Logs traffic 2026-05-21 .. 2026-06-06 that was hitting the honeypot UNFLAGGED. Grouped by theme; counts in comments are observed hits over that window.",
+
+    "name": "Malware Client - RedTail HTTP (libredtail)",
+    "category": "malware:redtail",
+    "level": "critical",
+    "section": ["headers"],
+    "regex": "(?i)libredtail",
+    "action": "drop"
+  },
+  {
+    "name": "IoT Botnet - Mirai/Gafgyt Forged UA (Mozlila typo)",
+    "category": "malware:iot-botnet",
+    "level": "high",
+    "section": ["headers"],
+    "regex": "(?i)Mozlila/",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - Infrawatch",
+    "category": "scanner:infrawatch",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)infrawatch",
+    "action": "log"
+  },
+  {
+    "name": "Scanner - InternetMeasurement (Driftnet)",
+    "category": "scanner:internet-measurement",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)internet[- ]?measurement",
+    "action": "log"
+  },
+  {
+    "name": "Scripting Library - Go fasthttp",
+    "category": "tooling-identification",
+    "level": "low",
+    "section": ["headers"],
+    "regex": "(?i)fasthttp",
+    "action": "log"
+  },
+
+  {
+    "name": "Cloud Credential Theft - AWS/GCP/Azure Dotdir",
+    "category": "secret-harvest:cloud-creds",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/\\.(aws|gcp|gcloud|azure|oci)/(credentials|config)",
+    "action": "drop"
+  },
+  {
+    "name": "Secret File Harvest - Shell/IDE Artifacts",
+    "category": "secret-harvest:dotfiles",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/\\.(bash_history|bashrc|profile|ssh/known_hosts|netrc|npmrc|DS_Store|htpasswd|vscode/|idea/|svn/|hg/)",
+    "action": "log"
+  },
+
+  {
+    "name": "Spring Boot Actuator Exposure",
+    "category": "info-disclosure:actuator",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/actuator/(env|health|gateway|beans|mappings|heapdump|threaddump|metrics|configprops|loggers|httptrace)",
+    "action": "log"
+  },
+  {
+    "name": "Git Repository Exposure (HEAD/index/refs)",
+    "category": "info-disclosure:git",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/\\.git/(HEAD|index|refs|logs|packed-refs|ORIG_HEAD)",
+    "action": "log"
+  },
+  {
+    "name": "Apache mod_status Disclosure",
+    "category": "info-disclosure:server-status",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)^/(server-status|server-info)\\b",
+    "action": "log"
+  },
+  {
+    "name": "Framework Debug Endpoint - Symfony Profiler / Django Debug",
+    "category": "info-disclosure:debug-toolbar",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)(/_profiler/|/__debug__/|/app_dev\\.php)",
+    "action": "log"
+  },
+
+  {
+    "name": "IP Camera Probe - Hikvision SDK webLanguage (CVE-2021-36260)",
+    "category": "iot-scan:hikvision",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/SDK/webLanguage",
+    "action": "log"
+  },
+  {
+    "name": "IoT Router Probe - Boa Webserver formLogin/formPing",
+    "category": "iot-scan:boa-router",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/boaform/",
+    "action": "log"
+  },
+  {
+    "name": "IoT Router Probe - D-Link HNAP1",
+    "category": "iot-scan:dlink-hnap",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/HNAP1",
+    "action": "log"
+  },
+  {
+    "name": "IP Camera Probe - ONVIF SOAP device_service",
+    "category": "iot-scan:onvif",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/onvif/device_service",
+    "action": "log"
+  },
+
+  {
+    "name": "VPN Fingerprint - Palo Alto GlobalProtect",
+    "category": "vpn-probe:globalprotect",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(global-protect|sslvpn)/",
+    "action": "log"
+  },
+  {
+    "name": "VPN Fingerprint - SonicWall SSLVPN API",
+    "category": "vpn-probe:sonicwall",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/api/sonicos/",
+    "action": "log"
+  },
+
+  {
+    "name": "Exposed Orchestration - Docker Engine API",
+    "category": "exposed-service:docker",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)(/(containers|images)/json|/v1\\.[0-9]+/(containers|images))",
+    "action": "log"
+  },
+  {
+    "name": "Exposed Orchestration - HashiCorp Consul/Nomad Agent API",
+    "category": "exposed-service:consul",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/v1/(agent/self|agent/members|catalog/services|status/leader)",
+    "action": "log"
+  },
+  {
+    "name": "Exposed LLM Endpoint - OpenAI-compatible API Probe",
+    "category": "exposed-service:llm-api",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/v1/(chat/completions|completions|models|embeddings)$",
+    "action": "log"
+  },
+
+  {
+    "name": "Mail Server Probe - Microsoft Exchange Autodiscover",
+    "category": "mail-probe:exchange",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/autodiscover(/autodiscover\\.(xml|json)|$|/)",
+    "action": "log"
+  },
+
+  {
+    "name": "Exploit - WordPress GravitySMTP Plugin Probe",
+    "category": "cms-recon:wordpress-plugin",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/wp-json/gravitysmtp/",
+    "action": "log"
+  },
+
+  {
+    "name": "Hypervisor Probe - VMware vCenter SOAP RetrieveServiceContent",
+    "category": "appliance-exploit:vcenter",
+    "level": "high",
+    "section": ["body"],
+    "regex": "(?i)(RetrieveServiceContent|urn:internalvim25)",
+    "action": "log"
+  },
+  {
+    "name": "ERP Probe - SAP NetWeaver SOAP Session",
+    "category": "appliance-exploit:sap",
+    "level": "low",
+    "section": ["body"],
+    "regex": "(?i)(sapsess:Session|webas/630/soap)",
+    "action": "log"
+  }
+]

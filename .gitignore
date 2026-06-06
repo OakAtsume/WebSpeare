@@ -1,3 +1,6 @@
 .vscode
 logs/*.txt
 logs/*.json
+
+# Live attack captures contain raw source IPs / payloads — keep out of history
+Live-Logs/

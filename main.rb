@@ -79,17 +79,22 @@ require_relative("waf/legacy")
 require_relative("waf/decoys/redtail-hello-world")
 require_relative("waf/decoys/PHPInfoDecoy")
 require_relative("waf/decoys/CVE-2025-55182")
+require_relative("waf/decoys/cPanel")
+require_relative("waf/decoys/phpunit-rce")
 legacy = LegacyChecks.new("waf/legacyrules")
 redTailSpoofer = CVE20244577_RedTailSpoofer.new()
 phpinfoDecoy = PHPInfoDecoy.new()
 react2Shell = CVE_2025_55182.new()
+cPanel = CPanelSpoofer.new()
+phpunitRce = PHPUnitRCEDecoy.new()
 
 # Method for Rule Data : Priority
 firewall.register(legacy.method(:legacyChecks), 900)
 firewall.register(redTailSpoofer.method(:runCheck), 101)
 firewall.register(phpinfoDecoy.method(:runCheck), 102)
 firewall.register(react2Shell.method(:runCheck), 103)
-
+firewall.register(cPanel.method(:runCheck), 104)
+firewall.register(phpunitRce.method(:runCheck), 105)
 
 # === FIREWALL END === #
 

@@ -210,10 +210,10 @@ class HoneySet
     out = ""
     out += "HTTP/1.1 #{code}\r\n"
     out += "Content-Type: #{mime}\r\n"
-    out += "Content-Lenght: #{body.bytesize}\r\n"
+    out += "Content-Length: #{body.bytesize}\r\n"
     if !headers.empty?
       headers.each do |k, v|
-        out += "#{key}: #{value}\r\n"
+        out += "#{k}: #{v}\r\n"
       end
     end
 

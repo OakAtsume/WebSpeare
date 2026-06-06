@@ -57,7 +57,7 @@ class PHPInfoDecoy
       "{{SERVER_NAME}}"    => @hostname,
       "{{SERVER_ADDR}}"    => @server_ip,
       "{{REMOTE_ADDR}}"    => request[:host],
-      "{{HTTP_USER_AGENT}}" => request[:headers]["User-Agent"].to_s,
+      "{{HTTP_USER_AGENT}}" => request[:headers]["user-agent"].to_s,
       "{{REQUEST_URI}}"    => request[:path],
       "{{SERVER_PORT}}"    => rand(1024..65535).to_s,
       "{{BUILD_DATE}}"     => @build_date
