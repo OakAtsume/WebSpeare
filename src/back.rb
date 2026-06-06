@@ -177,7 +177,7 @@ class HoneySet
             # request[:headers]["x-forwarded-for"] = request[:headers]["x-forwarded-for"] || request[:headers]["x-real-ip"] # Get the IP address from the reverse proxy
             request[:host] = request[:headers]["webspeare-nginx-real-ip"] # Set the host to the IP address from the reverse proxy
           end
-          request[:headers].remove("webspeare-nginx-real-ip")
+          request[:headers].delete("webspeare-nginx-real-ip")
 
         end
       end
