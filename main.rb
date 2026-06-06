@@ -112,9 +112,7 @@ firewall.register(uploadTraversal.method(:runCheck), 106)
     # request[:waf] = true
     # request[:wafRule] = fwReply[:reason]
     request[:waf] = true
-    request[:wafRule] = {
-      "name" => fwReply[:reason],
-    }
+    request[:wafRule] = fwReply[:reason]
     record.reqLogs(request)
 
     if fwReply[:overwrite] && fwReply[:payload] != nil
