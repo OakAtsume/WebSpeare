@@ -95,6 +95,9 @@ class LegacyChecks
           puts "Legacy Rule is not a Hash, #{rule}"
           next
         end
+        if !rule.key?("regex")
+          next
+        end
         points = rule["section"]
         regex = Regexp.new(rule["regex"])
         # rule["name"] = "#{rule["name"]} [Legacy-R" 
