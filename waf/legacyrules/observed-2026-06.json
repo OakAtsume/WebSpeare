@@ -184,7 +184,7 @@
     "regex": "(?i)/wp-json/gravitysmtp/",
     "action": "log"
   },
-
+  
   {
     "name": "Hypervisor Probe - VMware vCenter SOAP RetrieveServiceContent",
     "category": "appliance-exploit:vcenter",
