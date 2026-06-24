@@ -1,0 +1,44 @@
+[
+  {
+    "_note": "── Gaps surfaced by replaying the waf:false bucket (2026-H1, ~7k non-benign hits) through the ruleset. Specific signatures; broad forced-browsing classifier lives in z-classify-generic.json.",
+
+    "name": "RTSP / Streaming Media Probe (DESCRIBE/SETUP/rtsp://)",
+    "category": "iot-scan:rtsp",
+    "level": "high",
+    "section": ["method", "url"],
+    "regex": "(?i)(^(describe|setup|play|pause|teardown|announce|record|get_parameter)$|^rtsp://)",
+    "action": "log"
+  },
+  {
+    "name": "PHP Config & Dependency File Disclosure",
+    "category": "secret-harvest:php-config",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(config\\.php|composer\\.(lock|json)|vendor|app/config/parameters\\.yml|\\.htaccess|\\.htpasswd)(/|$)",
+    "action": "log"
+  },
+  {
+    "name": "Log File Disclosure",
+    "category": "info-disclosure:logs",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/([^/]*\\.log|logfile)$",
+    "action": "log"
+  },
+  {
+    "name": "CMS Login / Admin Script Probe",
+    "category": "cms-recon:login",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(wp-login\\.php|wp-admin/|user\\.php|admin/index\\.php|administrator/index\\.php)",
+    "action": "log"
+  },
+  {
+    "name": "Server-wide OPTIONS Probe (asterisk-form)",
+    "category": "anomaly:options-asterisk",
+    "level": "low",
+    "section": ["url"],
+    "regex": "^\\*$",
+    "action": "log"
+  }
+]

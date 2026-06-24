@@ -47,7 +47,7 @@
     "category": "secret-harvest:cloud-creds",
     "level": "critical",
     "section": ["url"],
-    "regex": "(?i)/\\.(aws|gcp|gcloud|azure|oci)/(credentials|config)",
+    "regex": "(?i)/\\.(aws|gcp|gcloud|azure|oci)/(credentials|config|application_default_credentials)",
     "action": "drop"
   },
   {
@@ -64,7 +64,7 @@
     "category": "info-disclosure:actuator",
     "level": "high",
     "section": ["url"],
-    "regex": "(?i)/actuator/(env|health|gateway|beans|mappings|heapdump|threaddump|metrics|configprops|loggers|httptrace)",
+    "regex": "(?i)^/actuator(/.*)?$",
     "action": "log"
   },
   {
@@ -72,7 +72,7 @@
     "category": "info-disclosure:git",
     "level": "high",
     "section": ["url"],
-    "regex": "(?i)/\\.git/(HEAD|index|refs|logs|packed-refs|ORIG_HEAD)",
+    "regex": "(?i)/\\.git/(HEAD|index|refs|logs|packed-refs|ORIG_HEAD|COMMIT_EDITMSG)",
     "action": "log"
   },
   {

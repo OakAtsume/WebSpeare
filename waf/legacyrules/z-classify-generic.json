@@ -1,0 +1,60 @@
+[
+  {
+    "_note": "── Generic / catch-all CLASSIFIERS ── Intentionally named to load LAST so that within any severity tier the specific signatures win and these only tag what would otherwise sit in the waf:false bucket. Includes method-based rules (the legacy engine now supports the \"method\" and \"version\" sections).",
+
+    "name": "Suspicious HTTP Method - WebDAV / Upload / Debug",
+    "category": "anomaly:http-method",
+    "level": "medium",
+    "section": ["method"],
+    "regex": "(?i)^(PUT|DELETE|PATCH|PROPFIND|PROPPATCH|MKCOL|COPY|MOVE|LOCK|UNLOCK|TRACE|TRACK|CONNECT|DEBUG|SEARCH)$",
+    "action": "log"
+  },
+  {
+    "name": "Anomalous HTTP Method - Non-standard Verb",
+    "category": "anomaly:http-method",
+    "level": "medium",
+    "section": ["method"],
+    "regex": "^(?!(GET|HEAD|POST|PUT|DELETE|PATCH|OPTIONS|TRACE|TRACK|CONNECT|PROPFIND|PROPPATCH|MKCOL|COPY|MOVE|LOCK|UNLOCK|DEBUG|SEARCH)$)[A-Z]+$",
+    "action": "log"
+  },
+  {
+    "name": "Command Injection - Shell Metacharacters",
+    "category": "rce-probe:command-injection",
+    "level": "medium",
+    "section": ["url", "body", "headers"],
+    "regex": "(?i)(\\$\\([^)]*\\)|`[^`]*`|;\\s*(wget|curl|bash|sh|nc|ncat|chmod|python|perl|busybox|telnet|tftp)\\b|\\|\\s*(ba)?sh\\b|&&\\s*(wget|curl))",
+    "action": "log"
+  },
+  {
+    "name": "LFI - Sensitive OS File Targeting",
+    "category": "lfi-traversal:os-files",
+    "level": "high",
+    "section": ["url", "body"],
+    "regex": "(?i)(/etc/(passwd|shadow|group|hosts|issue)\\b|/proc/self/(environ|cmdline|status)|(^|[/\\\\])win\\.ini\\b|[/\\\\]boot\\.ini\\b|/windows/system32/)",
+    "action": "log"
+  },
+  {
+    "name": "LFI/RFI - PHP Stream Wrapper Injection",
+    "category": "lfi-traversal:stream-wrapper",
+    "level": "high",
+    "section": ["url", "body"],
+    "regex": "(?i)(php://(filter|input|expect|memory)|phar://|data://text|expect://|zip://|glob://|file:///)",
+    "action": "log"
+  },
+  {
+    "name": "Content Discovery - Forced Browsing (common sensitive endpoint)",
+    "category": "recon:forced-browsing",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)^/(access|account|portal|database|db|root|development|secure|private|bin|reset|hidden|cms|members|users|debug|backend|internal|staging|app|module|_sql|api/v[0-9]+)/?$",
+    "action": "log"
+  },
+  {
+    "name": "Anomaly - Abnormally Long Request Path",
+    "category": "anomaly:oversized",
+    "level": "low",
+    "section": ["url"],
+    "regex": ".{512,}",
+    "action": "log"
+  }
+]

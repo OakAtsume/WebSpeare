@@ -24,7 +24,9 @@ class LegacyChecks
     if Dir.exist?(@folder)
       @rules = []
 
-      Dir.glob(File.join(@folder, "*.json")).each do |file|
+      # Sorted so load order (and therefore same-severity rule precedence) is
+      # deterministic instead of depending on filesystem glob order.
+      Dir.glob(File.join(@folder, "*.json")).sort.each do |file|
         parsed = JSON.parse(File.read(file))
 
         case parsed
@@ -43,6 +45,40 @@ class LegacyChecks
     if @rules.empty?
       puts("No Rules imported.")
     end
+
+    # Precompile each rule's regex ONCE at load time. Previously every rule was
+    # recompiled via Regexp.new on every single request inside the hot loop
+    # (~N rules x every request); compiling here and stashing the Regexp on the
+    # rule means the request path just reuses it. A rule with a missing or
+    # invalid regex is dropped now (with a warning) so a bad pattern can never
+    # reach — or crash — the per-request path.
+    compiled = []
+    @rules.each do |rule|
+      next unless rule.is_a?(Hash)
+      unless rule.key?("regex")
+        # Non-rule entries (e.g. comment-only {"_note": ...} objects) are kept
+        # out of the active set entirely.
+        next
+      end
+      begin
+        rule[:compiled] = Regexp.new(rule["regex"])
+        compiled << rule
+      rescue RegexpError => e
+        warn "Skipping WAF rule #{rule["name"].inspect}: invalid regex (#{e.message})"
+      end
+    end
+
+    # First-match-wins means precedence matters: a generic medium "fingerprint"
+    # rule used to shadow a specific critical "exploit" rule that matched the
+    # same path (e.g. /geoserver/ probe hiding a GeoServer RCE). Sort the active
+    # set by severity (critical -> low) so the worst classification a request
+    # qualifies for is the one reported. Stable within a severity via the index
+    # tiebreak, preserving the deterministic file order for same-level rules.
+    severityRank = { "critical" => 0, "high" => 1, "medium" => 2, "low" => 3 }
+    @rules = compiled
+      .each_with_index
+      .sort_by { |rule, idx| [severityRank.fetch(rule["level"], 4), idx] }
+      .map { |rule, _idx| rule }
   end
 
   def legacyChecks(request, serverInstance)
@@ -95,15 +131,36 @@ class LegacyChecks
           puts "Legacy Rule is not a Hash, #{rule}"
           next
         end
-        if !rule.key?("regex")
-          next
-        end
+        regex = rule[:compiled]
+        next if regex.nil?
         points = rule["section"]
-        regex = Regexp.new(rule["regex"])
         # rule["name"] = "#{rule["name"]} [Legacy-R" 
         # puts(">>[RULE] #{rule}")
         points.each do |point|
           case point
+          when "method"
+            # The HTTP verb itself. Lets rules classify WebDAV / upload / debug
+            # methods and otherwise-unknown verbs that the parser accepted as
+            # well-formed (uppercase, <=10 chars) but that are still anomalous.
+            if !request[:method].nil? && regex.match?(request[:method])
+              infraction = "Method: #{request[:method]}"
+              return {
+                     triggered: true,
+                     overwrite: false,
+                     reason: rule["name"],
+                     payload: nil,
+                   }
+            end
+          when "version"
+            if !request[:version].nil? && regex.match?(request[:version])
+              infraction = "Version: #{request[:version]}"
+              return {
+                     triggered: true,
+                     overwrite: false,
+                     reason: rule["name"],
+                     payload: nil,
+                   }
+            end
           when "headers"
             request[:headers].each do |key, value|
               if regex.match?(value)

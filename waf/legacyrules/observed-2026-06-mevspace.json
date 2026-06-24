@@ -1,0 +1,84 @@
+[
+  {
+    "_note": "── Derived from AS56971 MEVSPACE scanner 194.180.48.34 (burst 2026-06-24). These paths were observed hitting the honeypot with NO matching WAF rule.",
+
+    "name": "CI/CD Pipeline Config Exposure",
+    "category": "secret-harvest:cicd",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(\\.gitlab-ci\\.yml|\\.circleci/config\\.yml|\\.travis\\.yml|azure-pipelines\\.yml|circle\\.yml|jenkinsfile|dockerfile)$",
+    "action": "log"
+  },
+  {
+    "name": "Container Registry / Orchestration API Probe",
+    "category": "info-disclosure:orchestration",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)(/v2/_catalog|/api/v[0-9]+/namespaces/[^/]+/secrets|/kubeconfig|/v1/kv/)",
+    "action": "log"
+  },
+  {
+    "name": "API Spec & Swagger Disclosure",
+    "category": "recon:api-spec",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)(/swagger\\.(json|yaml)|/openapi\\.json|/v[0-9]+/api-docs|/api-docs|/api/debug/env|/api/env|/api/settings|/settings\\.json)$",
+    "action": "log"
+  },
+  {
+    "name": "Framework DB Config Disclosure",
+    "category": "secret-harvest:db-config",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/(?:app/config|application/config|config)/database(\\.php|\\.ya?ml)?$",
+    "action": "log"
+  },
+  {
+    "name": "Laravel Dev-Tooling Exposure",
+    "category": "info-disclosure:laravel",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)(/horizon/api/|/telescope/api/|/nova-api/|/_ignition/(health-check|execute-solution))",
+    "action": "log"
+  },
+  {
+    "name": "JS/Node Manifest & Lockfile Harvest",
+    "category": "secret-harvest:node-manifest",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(package\\.json|package-lock\\.json|yarn\\.lock|\\.yarnrc)$",
+    "action": "log"
+  },
+  {
+    "name": "Observability / Metrics Endpoint Exposure",
+    "category": "info-disclosure:metrics",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(metrics|prometheus|stats/prometheus)$",
+    "action": "log"
+  },
+  {
+    "name": "WordPress XML-RPC Enumeration / Pingback",
+    "category": "cms-recon:wordpress-xmlrpc",
+    "level": "high",
+    "section": ["url", "body"],
+    "regex": "(?i)(/xmlrpc\\.php|system\\.listMethods|pingback\\.ping|wp\\.getUsersBlogs)",
+    "action": "log"
+  },
+  {
+    "name": "Exploit - Apache Struts2 Showcase Probe",
+    "category": "rce-probe:struts",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/struts2-showcase/",
+    "action": "log"
+  },
+  {
+    "name": "Framework Admin Probe - Django Admin",
+    "category": "cms-recon:django",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)/django-admin/",
+    "action": "log"
+  }
+]

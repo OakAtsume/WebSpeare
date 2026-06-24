@@ -4,7 +4,7 @@
     "category": "xss",
     "level": "medium",
     "section": ["url", "body"],
-    "regex": "(?i)(<script.*?>.*?</script>|javascript:|data:text\\/html|vbscript:|on\\w+\\s*=)",
+    "regex": "(?i)(<script.*?>.*?</script>|javascript:|data:text\\/html|vbscript:|[\\s\"'<]on\\w+\\s*=)",
     "action": "log"
   },
   {
@@ -36,7 +36,7 @@
     "category": "secret-harvest",
     "level": "high",
     "section": ["url"],
-    "regex": "(?i)(\\.env(\\.|$)|\\.git\\/config|docker-compose\\.ya?ml|dump\\.sql|config\\.json|\\.env\\.(local|prod|production|backup|example)|\\.bak$|\\.old$|\\.save$|\\.swp$)",
+    "regex": "(?i)(\\.env(\\.|$)|\\.git\\/config|docker-compose\\.ya?ml|dump\\.sql|config\\.json|\\.env\\.(local|prod|production|backup|example)|\\.bak$|\\.old$|\\.save$|\\.swp$|\\.orig$|~$)",
     "action": "log"
   },
   {
@@ -44,7 +44,7 @@
     "category": "cms-recon",
     "level": "medium",
     "section": ["url"],
-    "regex": "(?i)(wp-config\\.php(\\.|$)|configuration\\.php|sites\\/default\\/settings\\.php)",
+    "regex": "(?i)(wp-config\\.php(\\.|~|$)|configuration\\.php|sites\\/default\\/settings\\.php)",
     "action": "log"
   },
   {
@@ -212,7 +212,7 @@
     "category": "protocol-anomaly",
     "level": "medium",
     "section": ["headers"],
-    "regex": "^(Mozilla/5.0|-|\\s*)$",
+    "regex": "^(Mozilla/5\\.0|-)$",
     "action": "log"
   },
   {
@@ -236,7 +236,7 @@
     "category": "command-injection",
     "level": "critical",
     "section": ["url", "body"],
-    "regex": "(?i)/api/v1/totp/user-backup-code|\\$\\(|`|;\\s*(wget|curl|sh)",
+    "regex": "(?i)/api/v1/totp/user-backup-code",
     "action": "log"
   },
   {
@@ -252,15 +252,15 @@
     "category": "path-traversal",
     "level": "critical",
     "section": ["url"],
-    "regex": "(?i)/vpn/\\.\\./|%2e%2e%2f",
+    "regex": "(?i)/vpn/(\\.\\.|%2e%2e)",
     "action": "log"
   },
   {
     "name": "Exploit Attempt - FortiOS CVE-2023-27997",
     "category": "buffer-overflow",
     "level": "critical",
-    "section": ["url", "body"],
-    "regex": "(?i)/remote/login|enc=",
+    "section": ["url"],
+    "regex": "(?i)/remote/(login|logincheck|hostcheck_validate|fgt_lang)",
     "action": "log"
   },
   {

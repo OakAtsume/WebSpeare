@@ -153,7 +153,7 @@
     "section": [
       "url"
     ],
-    "regex": "(?i)^/(secrets?|passwd(\\.txt)?|data_dump|user_list|logfile|dump|backup)/?$",
+    "regex": "(?i)^/(secrets?(\\.json)?|passwd(\\.txt)?|data_dump|user_list|logfile|dump|backup(\\.(sql|zip|tar|gz))?)/?$",
     "action": "log"
   }
 ]

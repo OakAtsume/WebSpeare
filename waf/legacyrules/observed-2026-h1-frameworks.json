@@ -1,0 +1,84 @@
+[
+  {
+    "_note": "── Modern web-framework & appliance endpoints surfaced from the waf:false POST bucket (2026-H1). Next.js cluster maps to CVE-2025-29927 (middleware auth bypass) / CVE-2025-55182 (React2Shell) reconnaissance.",
+
+    "name": "Next.js Framework Probe (RSC / middleware / server-action)",
+    "category": "framework-probe:nextjs",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)(/_next(/|$)|/__nextjs|/_middleware(/|$)|(^|/)_{0,2}rsc(/|$)|/\\[\\.\\.\\.)",
+    "action": "log"
+  },
+  {
+    "name": "GraphQL API Probe",
+    "category": "api-probe:graphql",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/graphql(/|$)",
+    "action": "log"
+  },
+  {
+    "name": "MLflow Model Registry Probe (RCE/LFI-prone)",
+    "category": "ml-ops-probe:mlflow",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(ajax-)?api/2\\.0/mlflow/",
+    "action": "log"
+  },
+  {
+    "name": "WS-Management / WinRM Probe",
+    "category": "appliance-exploit:wsman",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)^/wsman(/|$)",
+    "action": "log"
+  },
+  {
+    "name": "IoT Router Probe - Tenda/Generic goform",
+    "category": "iot-scan:goform",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/goform/",
+    "action": "log"
+  },
+  {
+    "name": "IoT Router Probe - D-Link getcfg.php",
+    "category": "iot-scan:dlink",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/getcfg\\.php",
+    "action": "log"
+  },
+  {
+    "name": "Control Panel Probe - cPanel/WHM Proxy Login",
+    "category": "control-panel-probe:whm",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/_+proxy_subdomain_whm",
+    "action": "log"
+  },
+  {
+    "name": "Exploit - Apache Struts .action Endpoint Probe",
+    "category": "rce-probe:struts",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)\\.action(/|$)",
+    "action": "log"
+  },
+  {
+    "name": "API / Auth Route Enumeration",
+    "category": "recon:api-route",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)^/(api|app/api|pages/api)(/(auth(/(callback|session|signin|providers|csrf))?|authenticate|login|route))?/?$|^/basic-api/login/?$",
+    "action": "log"
+  },
+  {
+    "name": "PHP Entry-point Probe",
+    "category": "recon:php-entrypoint",
+    "level": "low",
+    "section": ["url"],
+    "regex": "(?i)^/(index|home|main|default)\\.php$",
+    "action": "log"
+  }
+]
