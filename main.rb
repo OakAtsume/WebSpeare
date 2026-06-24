@@ -129,11 +129,12 @@ firewall.register(uploadTraversal.method(:runCheck), 106)
       )
       next
     end
-    record.log(
-      level: :attacks,
-      message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]} (Firewall: #{fwReply[:reason]})",
-      code: fwReply[:code],
-    )
+    # record.log(
+    #   level: :attacks,
+    #   message: "#{request[:method]} #{request[:path]} #{request[:version]} #{request[:headers]["user-agent"] ? request[:headers]["user-agent"] : "No Agent"} B(#{request[:body] ? request[:body].size : 0}) #{request[:params] ? request[:params].to_s : "No Params"} #{request[:host]} (Firewall: #{fwReply[:reason]})",
+    #   code: fwReply[:code],
+    # )
+
   end
 
   # Secure.txt handler

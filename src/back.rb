@@ -5,6 +5,7 @@ require("securerandom")
 require("json")
 require("uri")
 require("time")
+require("base64")
 # {"eventid":"cowrie.client.version","version":"SSH-2.0-libssh_0.11.1","message":"Remote SSH version: SSH-2.0-libssh_0.11.1","sensor":"relaynet","timestamp":"2025-04-06T21:15:41.828407Z","src_ip":"196.251.87.35","session":"eee58e6b2f89"}
 
 # Honeypot lol
@@ -120,6 +121,14 @@ class HoneySet
       :timestamp => Time.now.to_s,
     }
     begin
+
+      if !data.ascii_only?
+        request[:malformed] = true
+        request[:rawpayload] = Base64.urlsafe_encode64(data)
+        request[:method] = "MALFORMED PAYLOAD - WEBSPEARE"
+        return request
+      end
+
       if !data.valid_encoding? # Patch cuz ruby handles binary data weird :/
         data = data.force_encoding(Encoding::UTF_8)
       end
