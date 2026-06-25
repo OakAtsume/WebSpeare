@@ -54,16 +54,18 @@ class ServerUtils
     # words = @randomText["poems"].sample.split(/\b/)
     words = @randomText.sample.join(" ").split(/\b/)
     words.map! do |word|
-      if word.match?(/\w/) && rand < 0.50
-        "<a href=\"#{@baits["paths"].sample}\">#{word}</a>"
-      elsif word.match?(/\w/) && rand < 0.25
-        "<a href=\"#{@baits["paths"].sample}?#{@baits["params"].sample}=#{@baits["paths"].sample}\">#{word}</a>"
-      elsif word.match?(/\w/) && rand < 0.50
-        "#{word} <!--  #{@baits["strings"].sample}  -->"
-      else
+      # if word.match?(/\w/) && rand < 0.50
+      #   "<a href=\"#{@baits["paths"].sample}\">#{word}</a>"
+      # elsif word.match?(/\w/) && rand < 0.25
+      #   "<a href=\"#{@baits["paths"].sample}?#{@baits["params"].sample}=#{@baits["paths"].sample}\">#{word}</a>"
+      # elsif word.match?(/\w/) && rand < 0.50
+      #   "#{word} <!--  #{@baits["strings"].s
+      #   ample}  -->"
+      # else
         word
-      end
+      # end
     end
+
 
     return words.join("")
   end
@@ -157,7 +159,8 @@ firewall.register(uploadTraversal.method(:runCheck), 106)
   content = utils.randomWrap()
   # finalPage = @page.gsub("{{CONTENT}}", content)
   finalPage = @page.dup
-  finalPage.gsub!("{{TITLE}}", baits["strings"].sample)
+  # finalPage.gsub!("{{TITLE}}", baits["strings"].sample)
+  finalPage.gsub!("{{TITLE}}", "ShakeSpeare Poems")
   finalPage.gsub!("{{POEM}}", content)
   finalPage.gsub!("{{FOOTER}}", "Powered By ")
   record.reqLogs(request)
