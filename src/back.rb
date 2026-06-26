@@ -147,15 +147,25 @@ class HoneySet
 
       raw.each do |line|
         if line.include?(":")
-          request[:raw_headers] << line # Keep raw headers for logging as JSON
-
           key, value = line.split(":", 2) # Cap to 2 (Patches attackers doing multiple colons)
+          safeKey = normalizeHeaderKey(key)
+
+          # Redact public IP everywhere (including raw logs) if enabled
+          rawLine = line
+          if @con[:configs]["redactPublicIP"]["enabled"] && rawLine.include?(@con[:configs]["redactPublicIP"]["publicIP"])
+            rawLine = rawLine.gsub(@con[:configs]["redactPublicIP"]["publicIP"], @con[:configs]["redactPublicIP"]["redactWith"])
+          end
+
+          # Never log the reverse-proxy plumbing header (leaks real-ip / public IP)
+          unless safeKey == "webspeare-nginx-real-ip"
+            request[:raw_headers] << rawLine # Keep raw headers for logging as JSON
+          end
+
           if value.nil?
             request[:malformed] = true
             next
           end
           value = value.lstrip
-          safeKey = normalizeHeaderKey(key)
           # Redact public IP if enabled
           if @con[:configs]["redactPublicIP"]["enabled"] && (value.include?(@con[:configs]["redactPublicIP"]["publicIP"]))
             value = value.gsub(@con[:configs]["redactPublicIP"]["publicIP"], @con[:configs]["redactPublicIP"]["redactWith"])
@@ -204,7 +214,12 @@ class HoneySet
     rescue => e
       puts("#{e}\n#{e.backtrace.join("\n")}")
       emit(:error, @id, socket, e) # Emit error event
-      nil
+      # Parser blew up mid-flight: salvage the raw bytes instead of dropping the
+      # request entirely, so we can still see what the attacker sent.
+      request[:malformed] = true
+      request[:parseError] = e.message
+      request[:rawpayload] ||= Base64.urlsafe_encode64(data)
+      return safeString(request)
     end
   end
 

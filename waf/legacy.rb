@@ -187,6 +187,7 @@ class LegacyChecks
                      
             end
           when "url"
+            next if request[:path].nil? # path can be nil on a malformed request line
             process = request[:path].downcase
             if regex.match?(process)
               infraction = "URL: #{process}"

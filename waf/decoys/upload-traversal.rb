@@ -23,6 +23,7 @@ require "json"
 # A real vulnerable app would write the file and answer with a success blob; the
 # scanner keys off that to know the write landed and move to stage two.
 #
+
 # This decoy plays the vulnerable app: when it sees an upload body carrying a
 # traversal filename, it returns a believable "upload succeeded" JSON pointing
 # at the attacker's own filename. They think they have arbitrary file write and
