@@ -21,3 +21,14 @@ And more!
 * Easy parsing - activity is logged cleanly in `.json` and `.log` formats (Silimar to cowrie)
 * Flexible and adjustable - adjust anything you desire via simple JSON files and an HTML template
 * Minimal footprint - ideal for lightweight deployments and research setups
+
+
+## Reguarding AI
+AI (Claude/GPT) was used in the development of WebSpeare and continues to be used in a rather silly way. </br>
+I'm not very good with REGEX. But you know who is? AI! Claude/GPT and Such. Have been helpful with the development of Regex </br>
+and detection rules. The core application itself, is maintained by human-code and such. </br>
+And I would like to keep it this way; to prevent silly mistakes. </br>
+
+However, I do encorage the usage of AI in the context of Fuzzing/Code auditing/Commenting (but not editing); </br>
+Of Functions/Classes and Such; to prevent issues/oversights from being an issue in deployment.
+
