@@ -5,3 +5,6 @@ source "https://rubygems.org"
 # gem "rails"
 
 gem "maxmind-geoip2"
+
+# Pulled out of Ruby's default gems in 3.4; required by ../src/back.rb.
+gem "base64"

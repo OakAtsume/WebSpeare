@@ -1,357 +1,607 @@
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>WarGames Attack Map</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-        <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
-        <style>
-      /* --- Global Styles --- */
-      html, body {
-        margin: 0;
-        height: 100%;
-        background: black;
-        font-family: 'Share Tech Mono', monospace;
-        color: lime;
-        overflow: hidden; /* Prevent scrollbars */
+<head>
+  <meta charset="UTF-8" />
+  <title>WebSpeare — Attack Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* ------------------------------------------------------------------ *
+     * Self-contained. No external fonts, tiles, or scripts — runs on an  *
+     * air-gapped lab network. The world map is a vector layer fetched    *
+     * from /world.json (served locally) and drawn on a single canvas.    *
+     * ------------------------------------------------------------------ */
+    :root {
+      --bg: #04070a;
+      --grid: rgba(0, 255, 160, 0.06);
+      --land: rgba(54, 230, 170, 0.16);
+      --land-line: rgba(54, 230, 170, 0.38);
+      --fg: #43ffb0;
+      --dim: #2a6f5a;
+      --panel: rgba(2, 12, 10, 0.72);
+      --panel-border: rgba(67, 255, 176, 0.35);
+
+      --sev-critical: #ff2d4b;
+      --sev-high: #ff8c1a;
+      --sev-medium: #ffd400;
+      --sev-low: #39c6ff;
+      --sev-info: #39ff9e;
+      --sev-decoy: #ff3df0;
+
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas,
+        "DejaVu Sans Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; width: 100%;
+      background: var(--bg); color: var(--fg);
+      font-family: var(--mono);
+      overflow: hidden;
+      letter-spacing: 0.04em;
+    }
+
+    #stage { position: fixed; inset: 0; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Scanline / CRT flourish */
+    #stage::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+        rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px);
+      mix-blend-mode: multiply; opacity: 0.5; z-index: 5;
+    }
+
+    .panel {
+      position: absolute; z-index: 10;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 0 18px rgba(0, 255, 160, 0.12), inset 0 0 30px rgba(0,255,160,0.03);
+      backdrop-filter: blur(2px);
+      padding: 12px 14px;
+      pointer-events: none;
+    }
+    .panel h2 {
+      margin: 0 0 8px 0; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.22em;
+      color: #9affd9; opacity: 0.85;
+      border-bottom: 1px solid rgba(67,255,176,0.18); padding-bottom: 6px;
+    }
+
+    /* ---- Header (top-left) ---- */
+    #header { top: 16px; left: 16px; min-width: 260px; }
+    #header .title {
+      font-size: 20px; font-weight: 700; letter-spacing: 0.14em; color: #eafff6;
+      text-shadow: 0 0 12px rgba(67,255,176,0.5);
+    }
+    #header .title b { color: var(--fg); }
+    #header .sub { font-size: 11px; color: var(--dim); margin-top: 3px; }
+    #header .status { margin-top: 10px; font-size: 12px; display: flex; align-items: center; gap: 7px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sev-info);
+           box-shadow: 0 0 8px var(--sev-info); animation: blink 1.6s infinite; }
+    .dot.down { background: var(--sev-critical); box-shadow: 0 0 8px var(--sev-critical); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* ---- Counters (top-center) ---- */
+    #counters {
+      top: 16px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 22px; padding: 10px 22px;
+    }
+    .counter { text-align: center; }
+    .counter .n { font-size: 26px; font-weight: 700; color: #eafff6;
+                  text-shadow: 0 0 10px rgba(67,255,176,0.45); line-height: 1; }
+    .counter .l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em;
+                  color: var(--dim); margin-top: 5px; }
+    .counter.decoy .n { color: var(--sev-decoy); text-shadow: 0 0 10px var(--sev-decoy); }
+    .counter.crit .n { color: var(--sev-critical); text-shadow: 0 0 10px var(--sev-critical); }
+
+    /* ---- Stats / breakdown (top-right) ---- */
+    #stats { top: 16px; right: 16px; width: 250px; }
+    .sevrow { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 11px; }
+    .sevrow .swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+    .sevrow .name { width: 58px; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.1em; color: #9fd9c6; }
+    .bar { flex: 1; height: 7px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; width: 0; transition: width 0.5s ease; }
+    .sevrow .cnt { width: 38px; text-align: right; color: #d8fff0; }
+
+    .toplist { margin-top: 12px; }
+    .toplist .row { display: flex; justify-content: space-between; gap: 10px;
+                    font-size: 11px; margin: 3px 0; }
+    .toplist .row span:first-child {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #cdeee2; }
+    .toplist .row span:last-child { color: var(--fg); flex: 0 0 auto; }
+    .toplist .cve { color: var(--sev-high); }
+
+    /* ---- Alert stack (right, below stats) ---- */
+    #alerts { position: absolute; top: 360px; right: 16px; width: 250px; z-index: 11;
+              display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .alert {
+      border-left: 3px solid var(--sev-high);
+      background: rgba(30, 6, 2, 0.82); padding: 8px 10px; font-size: 11px;
+      box-shadow: 0 0 14px rgba(255,70,40,0.25);
+      animation: slideIn 0.35s ease-out, alertFade 9s ease-out forwards;
+    }
+    .alert.decoy { border-left-color: var(--sev-decoy); background: rgba(28,2,30,0.82);
+                   box-shadow: 0 0 16px rgba(255,61,240,0.3); }
+    .alert .h { font-weight: 700; letter-spacing: 0.1em; margin-bottom: 3px; }
+    .alert .h.decoy { color: var(--sev-decoy); }
+    .alert .h.crit { color: var(--sev-critical); }
+    .alert .meta { color: #d8cfc9; line-height: 1.45; }
+    .alert .meta b { color: #fff; }
+    @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes alertFade { 0%,75%{opacity:1} 100%{opacity:0} }
+
+    /* ---- Live feed (bottom-left) ---- */
+    #feed { bottom: 16px; left: 16px; width: min(640px, 60vw); max-height: 32vh;
+            overflow: hidden; }
+    #feed .lines { font-size: 11.5px; line-height: 1.6; }
+    .line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            animation: lineIn 0.3s ease-out; }
+    @keyframes lineIn { from { transform: translateX(-12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .line .t { color: #4f7d6e; margin-right: 6px; }
+    .line .sev { font-weight: 700; }
+    .line .ip { color: #7fe9ff; }
+    .line .loc { color: #ffb454; }
+    .line .ty { color: #d6fff0; }
+    .line .cve { color: var(--sev-high); font-weight: 700; }
+    .line .badge { color: var(--sev-decoy); font-weight: 700; }
+
+    /* ---- Legend (bottom-right) ---- */
+    #legend { bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; }
+    #legend .row { display: flex; align-items: center; gap: 7px; font-size: 10px;
+                   text-transform: uppercase; letter-spacing: 0.12em; color: #bfe; }
+    #legend .swatch { width: 16px; height: 3px; border-radius: 2px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="stage"><canvas id="map"></canvas></div>
+
+  <div id="header" class="panel">
+    <div class="title"><b>WEB</b>SPEARE <span style="opacity:.5">// ATTACK MAP</span></div>
+    <div class="sub" id="origin-label">honeypot</div>
+    <div class="status"><span class="dot" id="link-dot"></span><span id="link-text">connecting…</span></div>
+  </div>
+
+  <div id="counters" class="panel">
+    <div class="counter"><div class="n" id="c-total">0</div><div class="l">Total Hits</div></div>
+    <div class="counter crit"><div class="n" id="c-crit">0</div><div class="l">Critical+High</div></div>
+    <div class="counter decoy"><div class="n" id="c-decoy">0</div><div class="l">Decoys Hit</div></div>
+    <div class="counter"><div class="n" id="c-mal">0</div><div class="l">Malformed</div></div>
+  </div>
+
+  <div id="stats" class="panel">
+    <h2>Severity</h2>
+    <div id="sevbars"></div>
+    <div class="toplist">
+      <h2 style="margin-top:14px">Top Origins</h2>
+      <div id="top-countries"></div>
+    </div>
+    <div class="toplist">
+      <h2 style="margin-top:14px">Top Signatures</h2>
+      <div id="top-rules"></div>
+    </div>
+    <div class="toplist" id="cve-wrap">
+      <h2 style="margin-top:14px">CVE Probes</h2>
+      <div id="top-cves"></div>
+    </div>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div id="feed" class="panel">
+    <h2>Live Feed</h2>
+    <div class="lines" id="feed-lines"></div>
+  </div>
+
+  <div id="legend" class="panel">
+    <div class="row"><span class="swatch" style="background:var(--sev-critical)"></span>Critical</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-high)"></span>High</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-medium)"></span>Medium</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-low)"></span>Low</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-info)"></span>Info</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-decoy)"></span>Decoy engaged</div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const SEV_COLORS = {
+      critical: "#ff2d4b", high: "#ff8c1a", medium: "#ffd400",
+      low: "#39c6ff", info: "#39ff9e", decoy: "#ff3df0",
+    };
+    const SEV_ORDER = ["critical", "high", "medium", "low", "info"];
+
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+
+    let world = [];              // array of rings: [[lon,lat],...]
+    let origin = { lat: 40.7608, lon: -111.891, label: "honeypot" };
+    const arcs = [];             // active animated attack arcs
+    const pings = [];            // origin impact ripples
+    const MAX_ARCS = 140;
+
+    // --- Layout / projection (equirectangular, letterboxed 2:1) -----------
+    let DPR = 1, W = 0, H = 0;       // device px
+    let mapX = 0, mapY = 0, mapW = 0, mapH = 0; // css px map rect
+
+    function resize() {
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      const cssW = window.innerWidth, cssH = window.innerHeight;
+      canvas.width = Math.floor(cssW * DPR);
+      canvas.height = Math.floor(cssH * DPR);
+      W = canvas.width; H = canvas.height;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      // Fit a 2:1 world into the viewport.
+      if (cssW / cssH > 2) {
+        mapH = cssH; mapW = cssH * 2; mapX = (cssW - mapW) / 2; mapY = 0;
+      } else {
+        mapW = cssW; mapH = cssW / 2; mapX = 0; mapY = (cssH - mapH) / 2;
+      }
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const projX = (lon) => mapX + ((lon + 180) / 360) * mapW;
+    const projY = (lat) => mapY + ((90 - lat) / 180) * mapH;
+
+    // --- World drawing ----------------------------------------------------
+    function drawWorld() {
+      // graticule
+      ctx.strokeStyle = getCSS("--grid");
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let lon = -180; lon <= 180; lon += 30) {
+        ctx.moveTo(projX(lon), mapY); ctx.lineTo(projX(lon), mapY + mapH);
+      }
+      for (let lat = -60; lat <= 90; lat += 30) {
+        ctx.moveTo(mapX, projY(lat)); ctx.lineTo(mapX + mapW, projY(lat));
+      }
+      ctx.stroke();
+
+      // land
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = getCSS("--land-line");
+      ctx.fillStyle = getCSS("--land");
+      ctx.shadowColor = "rgba(54,230,170,0.5)";
+      ctx.shadowBlur = 4;
+      for (const ring of world) {
+        ctx.beginPath();
+        for (let i = 0; i < ring.length; i++) {
+          const x = projX(ring[i][0]), y = projY(ring[i][1]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    // --- Arc geometry -----------------------------------------------------
+    function makeArc(a) {
+      let lon1 = a.lon, lat1 = a.lat;
+      let lon2 = origin.lon, lat2 = origin.lat;
+      // shortest path across the antimeridian
+      if (Math.abs(lon1 - lon2) > 180) {
+        if (lon1 > lon2) lon2 += 360; else lon1 += 360;
+      }
+      const pts = [];
+      const N = 48;
+      const mx = (lon1 + lon2) / 2, my = (lat1 + lat2) / 2;
+      const dist = Math.hypot(lon2 - lon1, lat2 - lat1);
+      // bow upward (toward higher latitude) for the classic arc look
+      const lift = Math.min(55, dist * 0.32 + 6);
+      const cLat = my + lift;
+      const cLon = mx;
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const u = 1 - t;
+        const lat = u * u * lat1 + 2 * u * t * cLat + t * t * lat2;
+        const lon = u * u * lon1 + 2 * u * t * cLon + t * t * lon2;
+        pts.push([lon, lat]);
+      }
+      return pts;
+    }
+
+    function strokePolyline(pts, upto) {
+      // upto in [0..1] fraction of the path to draw; splits at antimeridian jumps
+      const last = Math.max(1, Math.floor(pts.length * upto));
+      let prevX = null;
+      ctx.beginPath();
+      for (let i = 0; i < last; i++) {
+        let lon = ((pts[i][0] + 180) % 360 + 360) % 360 - 180;
+        const x = projX(lon), y = projY(pts[i][1]);
+        if (prevX !== null && Math.abs(x - prevX) > mapW / 2) {
+          ctx.moveTo(x, y);          // wrap: start a fresh subpath
+        } else if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        prevX = x;
+      }
+      ctx.stroke();
+    }
+
+    function pointAt(pts, t) {
+      const f = Math.min(0.999, Math.max(0, t)) * (pts.length - 1);
+      const i = Math.floor(f);
+      let lon = pts[i][0], lat = pts[i][1];
+      lon = ((lon + 180) % 360 + 360) % 360 - 180;
+      return [projX(lon), projY(lat)];
+    }
+
+    // --- Spawn an attack --------------------------------------------------
+    function spawnArc(a) {
+      const color = a.decoy ? SEV_COLORS.decoy : (SEV_COLORS[a.severity] || SEV_COLORS.info);
+      arcs.push({ pts: makeArc(a), color, t0: performance.now(), decoy: !!a.decoy });
+      if (arcs.length > MAX_ARCS) arcs.shift();
+    }
+
+    // --- Animation loop ---------------------------------------------------
+    const DRAW_MS = 1100, HOLD_MS = 900, FADE_MS = 2600;
+    const TOTAL = DRAW_MS + HOLD_MS + FADE_MS;
+
+    function frame(now) {
+      ctx.clearRect(0, 0, W, H);
+      drawWorld();
+
+      // origin marker
+      const ox = projX(origin.lon), oy = projY(origin.lat);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 400);
+      ctx.save();
+      ctx.shadowColor = "#ff3b3b"; ctx.shadowBlur = 16 + pulse * 10;
+      ctx.fillStyle = "#ff5b5b";
+      ctx.beginPath(); ctx.arc(ox, oy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(255,90,90," + (0.5 + pulse * 0.4) + ")";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(ox, oy, 9 + pulse * 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+
+      // arcs
+      for (let i = arcs.length - 1; i >= 0; i--) {
+        const arc = arcs[i];
+        const age = now - arc.t0;
+        if (age > TOTAL) { arcs.splice(i, 1); continue; }
+
+        const drawT = Math.min(1, age / DRAW_MS);
+        let alpha = 1;
+        if (age > DRAW_MS + HOLD_MS) {
+          alpha = 1 - (age - DRAW_MS - HOLD_MS) / FADE_MS;
+        }
+        // trigger an impact ping right when the arc completes
+        if (!arc.hit && drawT >= 1) {
+          arc.hit = true;
+          pings.push({ t0: now, color: arc.color });
+        }
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.strokeStyle = arc.color;
+        ctx.shadowColor = arc.color;
+        ctx.shadowBlur = arc.decoy ? 14 : 8;
+        ctx.lineWidth = arc.decoy ? 2.4 : 1.8;
+        strokePolyline(arc.pts, drawT);
+        ctx.restore();
+
+        // travelling head
+        if (drawT < 1) {
+          const [hx, hy] = pointAt(arc.pts, drawT);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, alpha);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = arc.color; ctx.shadowBlur = 12;
+          ctx.beginPath(); ctx.arc(hx, hy, arc.decoy ? 3.2 : 2.4, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+
+        // source blip
+        const [sx, sy] = pointAt(arc.pts, 0);
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha) * 0.9;
+        ctx.fillStyle = arc.color; ctx.shadowColor = arc.color; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       }
 
-      /* --- Map Styles --- */
-      #map {
-        height: 100%;
-        filter: brightness(1.1) contrast(1.2); /* Subtle glow/contrast for map */
+      // impact ripples
+      for (let i = pings.length - 1; i >= 0; i--) {
+        const p = pings[i];
+        const age = now - p.t0;
+        const life = 900;
+        if (age > life) { pings.splice(i, 1); continue; }
+        const t = age / life;
+        ctx.save();
+        ctx.globalAlpha = (1 - t) * 0.8;
+        ctx.strokeStyle = p.color; ctx.lineWidth = 2;
+        ctx.shadowColor = p.color; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(ox, oy, 4 + t * 26, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
       }
 
-      .leaflet-container {
-        background: black;
-        cursor: crosshair; /* Terminal-style cursor */
-      }
+      requestAnimationFrame(frame);
+    }
 
-      /* --- Attack Line Styles --- */
-      .attack-line {
-        filter: drop-shadow(0 0 6px lime); /* Green glow for lines */
-      }
+    function getCSS(v) {
+      return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    }
 
-      /* Animation for drawing the dotted line */
-      .drawing-line {
-        stroke: lime;
-        stroke-width: 2;
-        fill: none; /* Important for paths */
-        stroke-dasharray: 5, 10; /* Dotted line: 5px dash, 10px gap */
-        stroke-dashoffset: 1000; /* Start fully offset for animation */
-        animation: drawLine 1.5s ease-out forwards; /* Draw over 1.5s */
-      }
+    // --- HUD --------------------------------------------------------------
+    const $ = (id) => document.getElementById(id);
+    function fmt(n) { return (n || 0).toLocaleString(); }
 
-      /* Keyframe animation for drawing the line */
-      @keyframes drawLine {
-        to { stroke-dashoffset: 0; }
-      }
+    function renderStats(s) {
+      if (!s) return;
+      $("c-total").textContent = fmt(s.total);
+      $("c-decoy").textContent = fmt(s.decoys);
+      $("c-mal").textContent = fmt(s.malformed);
+      const sev = s.severity || {};
+      $("c-crit").textContent = fmt((sev.critical || 0) + (sev.high || 0));
 
-      /* General fading animation for elements */
-      .fading-element {
-        /* Increased duration for attack lines to fade out */
-        animation: fadeOut 5s ease-out forwards; /* Changed from 0.8s to 5s */
-      }
+      const max = Math.max(1, ...SEV_ORDER.map((k) => sev[k] || 0));
+      $("sevbars").innerHTML = SEV_ORDER.map((k) => `
+        <div class="sevrow">
+          <span class="swatch" style="background:${SEV_COLORS[k]}"></span>
+          <span class="name">${k}</span>
+          <span class="bar"><i style="width:${((sev[k] || 0) / max) * 100}%;background:${SEV_COLORS[k]};box-shadow:0 0 8px ${SEV_COLORS[k]}"></i></span>
+          <span class="cnt">${fmt(sev[k] || 0)}</span>
+        </div>`).join("");
 
-      /* Keyframe for general fading out */
-      @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
-      }
+      $("top-countries").innerHTML = topRows(s.topCountries);
+      $("top-rules").innerHTML = topRows(s.topRules);
+      const cves = topRows(s.topCves, "cve");
+      $("top-cves").innerHTML = cves || `<div class="row"><span style="color:var(--dim)">none observed</span></div>`;
+    }
 
-      /* --- Honeypot Marker Styles --- */
-      .honeypot-marker {
-        animation: honeypotFadePulse 2s infinite alternate; /* Continuous fade/pulse */
-        pointer-events: none; /* Don't block clicks on map underneath */
-        opacity: 0.7; /* Initial state of opacity, will be overridden by animation */
-      }
+    function topRows(list, cls) {
+      if (!list || !list.length) return "";
+      return list.map((r) => `<div class="row"><span class="${cls || ""}">${esc(r.name)}</span><span>${fmt(r.count)}</span></div>`).join("");
+    }
 
-      /* Keyframe for honeypot (fade-in-and-out) */
-      @keyframes honeypotFadePulse {
-        0% { opacity: 0.5; box-shadow: 0 0 5px red; } /* Faded, smaller glow */
-        100% { opacity: 1; box-shadow: 0 0 20px red; } /* Fully opaque, larger glow */
-      }
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
 
-      /* --- Alert Boxes (Right Side) --- */
-      #alert-box-container {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 280px;
-        max-height: calc(100% - 40px); /* Adjust to fit screen height */
-        overflow-y: auto; /* Allow scrolling if many boxes */
-        z-index: 999; /* Ensure it's above the map */
-        pointer-events: none; /* Allow clicks to pass through to map */
-        scrollbar-width: none; /* Hide scrollbar for aesthetic */
-        -ms-overflow-style: none; /* IE and Edge */
-      }
-      #alert-box-container::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
-      }
+    const MAX_FEED = 14;
+    function addFeed(a) {
+      const lines = $("feed-lines");
+      const color = a.decoy ? SEV_COLORS.decoy : (SEV_COLORS[a.severity] || SEV_COLORS.info);
+      const time = new Date(a.ts).toLocaleTimeString("en-US", { hour12: false });
+      const loc = a.lab ? "LAB" : [a.city, a.country].filter(Boolean).join("/");
+      const div = document.createElement("div");
+      div.className = "line";
+      div.innerHTML =
+        `<span class="t">[${time}]</span>` +
+        `<span class="sev" style="color:${color}">${(a.severity || "info").toUpperCase()}</span> ` +
+        (a.decoy ? `<span class="badge">⚑DECOY</span> ` : "") +
+        `<span class="ip">${esc(a.ip)}</span> ` +
+        `<span class="loc">(${esc(loc)})</span> ` +
+        `<span class="ty">${esc(a.type)}</span>` +
+        (a.cve ? ` <span class="cve">${esc(a.cve)}</span>` : "");
+      lines.insertBefore(div, lines.firstChild);
+      while (lines.children.length > MAX_FEED) lines.removeChild(lines.lastChild);
+    }
 
-      .alert-box {
-        background: rgba(30, 0, 0, 0.9); /* Dark red, semi-transparent */
-        border: 1px solid red;
-        margin-bottom: 10px;
-        padding: 10px;
-        box-shadow: 0 0 15px rgba(255,0,0,0.6); /* Red glow */
-        font-size: 0.9em;
-        line-height: 1.4;
-        opacity: 0; /* Start hidden for entrance animation */
-        animation: slideIn 0.5s ease-out forwards, /* Slide in over 0.5s */
-                   fadeOutBox 10s ease-out 5s forwards; /* Increased duration (10s) and delay (5s) */
-        box-sizing: border-box; /* Include padding/border in width */
-        pointer-events: auto; /* Make content clickable/selectable */
-      }
+    const MAX_ALERTS = 4;
+    function maybeAlert(a) {
+      const big = a.decoy || a.severity === "critical" || a.severity === "high";
+      if (!big) return;
+      const box = $("alerts");
+      const el = document.createElement("div");
+      el.className = "alert" + (a.decoy ? " decoy" : "");
+      const loc = a.lab ? "Lab Network" : [a.city, a.country_name].filter(Boolean).join(", ");
+      el.innerHTML =
+        `<div class="h ${a.decoy ? "decoy" : "crit"}">${a.decoy ? "DECOY ENGAGED" : (a.severity || "").toUpperCase() + " ALERT"}</div>` +
+        `<div class="meta"><b>${esc(a.ip)}</b> — ${esc(loc)}<br>` +
+        `${esc(a.type)}${a.cve ? " · <b>" + esc(a.cve) + "</b>" : ""}<br>` +
+        `<span style="color:#9a8">${esc(a.method)} ${esc(a.path)}</span></div>`;
+      box.insertBefore(el, box.firstChild);
+      while (box.children.length > MAX_ALERTS) box.removeChild(box.lastChild);
+      setTimeout(() => el.remove(), 9000);
+    }
 
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
+    function ingest(a, replay) {
+      spawnArc(a);
+      addFeed(a);
+      if (!replay) maybeAlert(a);
+    }
 
-      @keyframes fadeOutBox {
-        to { opacity: 0; }
-      }
+    function setOrigin(o) {
+      if (!o) return;
+      origin = o;
+      $("origin-label").textContent = o.label || "honeypot";
+    }
 
-      .alert-box h3 {
-        margin: 0 0 5px 0;
-        font-size: 1.1em;
-        color: yellow; /* Highlight header */
-      }
-      .alert-box p {
-        margin: 0;
-      }
+    function setLink(up) {
+      $("link-dot").classList.toggle("down", !up);
+      $("link-text").textContent = up ? "live · streaming" : "reconnecting…";
+    }
 
-      /* --- Text Log (Lower-Left) --- */
-      #log-container {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        width: 95%;
-        max-height: 40%; /* Limit height to prevent overlap */
-        overflow-y: auto; /* Allow scrolling */
-        z-index: 999;
-        pointer-events: none; /* Allow map interaction */
-        background: rgba(0, 0, 0, 0.6); /* Dark transparent background */
-        border: 1px solid lime;
-        padding: 10px;
-        box-shadow: 0 0 15px rgba(0,255,0,0.5); /* Green glow */
-        font-size: 0.85em;
-        line-height: 1.3;
-        scrollbar-width: none; /* Hide scrollbar for aesthetic */
-        -ms-overflow-style: none; /* IE and Edge */
-      }
-      #log-container::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
-      }
+    // --- Transport: SSE with reconnect, polling fallback ------------------
+    let es = null, pollTimer = null, lastId = 0, backoff = 1000;
 
-      .log-entry {
-        margin-bottom: 5px;
-        white-space: nowrap; /* Keep entry on single line */
-        overflow: hidden;
-        text-overflow: ellipsis; /* Add "..." if too long */
-        opacity: 0; /* Start hidden for entrance animation */
-        animation: slideLogIn 0.5s ease-out forwards; /* Slide in over 0.5s */
-      }
+    function handleRecent(payload, replay) {
+      if (payload.origin) setOrigin(payload.origin);
+      if (payload.stats) renderStats(payload.stats);
+      const list = payload.attacks || [];
+      // Replay the most recent handful as arcs so the map isn't empty; feed
+      // gets the lot (oldest first so order reads correctly).
+      list.forEach((a) => { if (a.id > lastId) lastId = a.id; });
+      const tail = list.slice(-MAX_FEED);
+      tail.forEach((a) => { addFeed(a); });
+      list.slice(-24).forEach((a, i) => setTimeout(() => spawnArc(a), i * 60));
+    }
 
-      @keyframes slideLogIn {
-        from { transform: translateX(-100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
+    function startSSE() {
+      if (typeof EventSource === "undefined") return startPolling();
+      try { es = new EventSource("/api/stream"); }
+      catch (e) { return startPolling(); }
 
-      .log-entry .timestamp { color: gray; margin-right: 5px; }
-      .log-entry .type { color: yellow; font-weight: bold; }
-      .log-entry .ip { color: aqua; }
-      .log-entry .country { color: orange; }
-    </style>
-    </head>
-    <body>
-        <div id="map"></div>
-        <div id="alert-box-container"></div>
-        <div id="log-container"></div>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-        <script>
-      // Initialize the map
-      const map = L.map('map', {
-        worldCopyJump: false,
-        continuousWorld: false,
-        noWrap: true,
-        maxBounds: [[-90, -180], [90, 180]],
-        maxBoundsViscosity: 1.0,
-        zoomSnap: 0.25,
-        zoomDelta: 0.25,
-        minZoom: 1,
-        center: [30, 0],
-        zoom: 2,
+      es.addEventListener("open", () => { setLink(true); backoff = 1000; });
+      es.addEventListener("recent", (e) => handleRecent(JSON.parse(e.data), true));
+      es.addEventListener("stats", (e) => renderStats(JSON.parse(e.data)));
+      es.addEventListener("attack", (e) => {
+        const a = JSON.parse(e.data);
+        if (a.id) lastId = Math.max(lastId, a.id);
+        ingest(a, false);
       });
+      es.addEventListener("error", () => {
+        setLink(false);
+        es.close(); es = null;
+        backoff = Math.min(backoff * 1.6, 15000);
+        setTimeout(startSSE, backoff);
+      });
+    }
 
-      // Add the dark tile layer from CARTO
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(map);
-
-      // Define the honeypot location (Salt Lake City)
-      const honeypot = [40.7608, -111.8910];
-
-      // Add the static red circle marker for the honeypot
-      L.circleMarker(honeypot, {
-        radius: 6,
-        color: 'red',
-        fillColor: 'red',
-        fillOpacity: 1,
-        className: 'honeypot-marker' // Apply custom class for pulse animation
-      }).addTo(map);
-
-      // Get references to UI containers
-      const alertBoxContainer = document.getElementById('alert-box-container');
-      const logContainer = document.getElementById('log-container');
-      const MAX_ALERT_BOXES = 3;
-      const MAX_LOG_ENTRIES = 15;
-
-      // --- Helper function to create a curved path (quadratic bezier) ---
-      function createCurvedPath(latlng1, latlng2, resolution = 30) {
-        let [lat1, lon1] = latlng1;
-        let [lat2, lon2] = latlng2;
-
-        const pathPoints = [];
-
-        // Adjust longitude to ensure shortest path across the 180/-180 meridian.
-        if (Math.abs(lon1 - lon2) > 180) {
-            if (lon1 > lon2) {
-                lon2 += 360;
-            } else {
-                lon1 += 360;
-            }
-        }
-
-        const midLat = (lat1 + lat2) / 2;
-        const midLon = (lon1 + lon2) / 2;
-
-        const curveFactor = 0.2;
-        const dist = Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lon1 - lon2, 2));
-        const controlLat = midLat + (lat2 - lat1) * curveFactor;
-        const controlLon = midLon + (lon2 - lon1) * curveFactor;
-
-        const arcHeight = dist * 0.2;
-        const orthogonalDirection = Math.atan2(lat2 - lat1, lon2 - lon1) + Math.PI / 2;
-        const offsetLat = arcHeight * Math.sin(orthogonalDirection);
-        const offsetLon = arcHeight * Math.cos(orthogonalDirection);
-
-        const finalControlLat = controlLat + offsetLat;
-        const finalControlLon = controlLon + offsetLon;
-
-        for (let i = 0; i <= resolution; i++) {
-            const t = i / resolution;
-            const lat = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * finalControlLat + t * t * lat2;
-            const lon = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * finalControlLon + t * t * lon2;
-            pathPoints.push([lat, (lon + 540) % 360 - 180]); // Normalize to -180 to 180
-        }
-        return pathPoints;
-      }
-
-      // --- Draw attack line with animation ---
-      function drawAttackLine(from, to) {
-        const path = createCurvedPath(from, to);
-        const line = L.polyline(path, {
-          color: 'lime',
-          weight: 2,
-          opacity: 1,
-          className: 'attack-line drawing-line',
-          interactive: false
-        }).addTo(map);
-
-        setTimeout(() => {
-          if (line && line._path) {
-              line._path.classList.remove('drawing-line');
-              line._path.classList.add('fading-element');
-          }
-          // The line removal is now tied to the fadeOut animation duration + some buffer
-          setTimeout(() => {
-              if (map.hasLayer(line)) {
-                  map.removeLayer(line);
-              }
-          }, 6000); // Increased from 5000ms (5 seconds) to 6000ms (6 seconds) to match the new fadeOut duration (5s) plus a small buffer
-      }, 1500); // This is the delay BEFORE the fadeOut animation starts. Kept at 1.5s (drawing animation time)
-
-      }
-
-      // --- Display Attack Alert Box (Right Side) ---
-      function displayAlertBox(attackData) {
-          if (alertBoxContainer.children.length >= MAX_ALERT_BOXES) {
-              alertBoxContainer.firstElementChild.remove();
-          }
-          const box = document.createElement('div');
-          box.className = 'alert-box';
-          const displayTime = new Date(attackData.timestamp).toLocaleTimeString('en-US', { hour12: false });
-          box.innerHTML = `
-              <h3>ATTACK DETECTED!</h3>
-              <p><strong>Time:</strong> ${displayTime}</p>
-              <p><strong>Source:</strong> ${attackData.ip} (${attackData.country}/${attackData.state})</p>
-              <p><strong>Type:</strong> ${attackData.type}</p>
-          `;
-          alertBoxContainer.appendChild(box);
-          // Removed the direct setTimeout for box removal here.
-          // The alert-box CSS animation "fadeOutBox" now handles its removal after a delay.
-          // The total duration for the alert box to be visible will be 0.5s (slideIn) + 5s (delay before fadeOutBox) + 10s (fadeOutBox duration) = 15.5 seconds.
-      }
-
-      // --- Append to Text Log (Lower-Left) ---
-      function appendToLog(attackData) {
-          if (logContainer.children.length >= MAX_LOG_ENTRIES) {
-              logContainer.firstElementChild.remove();
-          }
-          const logEntry = document.createElement('div');
-          logEntry.className = 'log-entry';
-          const displayTime = new Date(attackData.timestamp).toLocaleTimeString('en-US', { hour12: false });
-          logEntry.innerHTML = `
-              <span class="timestamp">[${displayTime}]</span>
-              <span class="type">${attackData.type}</span> from
-              <span class="ip">${attackData.ip}</span> (<span class="country">${attackData.country_name}/${attackData.state}</span>)
-              ${attackData.other ? `- ${attackData.other}` : ''}
-          `;
-          logContainer.appendChild(logEntry);
-          logContainer.scrollTop = logContainer.scrollHeight;
-      }
-
-      // --- Main Polling Logic (Now fetches from your backend!) ---
-      async function pollAttacks() {
-        console.log("Polling your backend for attacks..."); // For debugging in console
+    // Fallback for environments without SSE: poll /api/recent and diff by id.
+    function startPolling() {
+      setLink(true);
+      const tick = async () => {
         try {
-            // This is the line you'll ensure your backend serves
-            // Important shit here! //
-            const response = await fetch('/api/latest');
+          const r = await fetch("/api/recent");
+          const d = await r.json();
+          if (d.origin) setOrigin(d.origin);
+          if (d.stats) renderStats(d.stats);
+          (d.attacks || []).forEach((a) => {
+            if (a.id > lastId) { lastId = a.id; ingest(a, false); }
+          });
+          setLink(true);
+        } catch (e) { setLink(false); }
+      };
+      tick();
+      pollTimer = setInterval(tick, 1500);
+    }
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-
-            if (data && data.attacks && Array.isArray(data.attacks)) {
-                if (data.attacks.length === 0) {
-                    console.log("No new attacks detected.");
-                }
-                data.attacks.forEach((attack) => {
-                    const sourceLatlng = [attack.lat, attack.lon];
-                    drawAttackLine(sourceLatlng, honeypot);
-                    displayAlertBox(attack);
-                    appendToLog(attack);
-                });
-            } else {
-                console.warn("Backend response was not in expected format:", data);
-            }
-        } catch (error) {
-            console.error("Failed to fetch attack data:", error);
-            // You might want to display a temporary error message on the UI here
-        }
+    // --- Boot -------------------------------------------------------------
+    async function boot() {
+      try {
+        const r = await fetch("/world.json");
+        world = await r.json();
+      } catch (e) {
+        console.error("world.json failed", e);
       }
+      requestAnimationFrame(frame);
 
-      // Start polling immediately when the page loads
-      pollAttacks();
-
-      // Set up an interval to poll for attacks every 5 seconds
-      setInterval(pollAttacks, 1500);
-    </script>
-    </body>
+      // ?shot = one-shot static snapshot (no persistent stream). Handy for
+      // grabbing stills and for headless capture, which can't reach
+      // network-idle while an SSE connection is held open.
+      if (location.search.includes("shot")) {
+        try {
+          const d = await (await fetch("/api/recent")).json();
+          handleRecent(d, true);
+          setLink(true);
+        } catch (e) { setLink(false); }
+        return;
+      }
+      startSSE();
+    }
+    boot();
+  })();
+  </script>
+</body>
 </html>
