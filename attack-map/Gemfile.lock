@@ -3,6 +3,7 @@ GEM
   specs:
     addressable (2.8.8)
       public_suffix (>= 2.0.2, < 8.0)
+    base64 (0.3.0)
     connection_pool (3.0.2)
     domain_name (0.6.20240107)
     ffi (1.17.1)
@@ -33,6 +34,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  base64
   maxmind-geoip2
 
 BUNDLED WITH

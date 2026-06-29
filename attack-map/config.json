@@ -4,6 +4,14 @@
     "port": 8082
   },
   "fileformat": "%Y-%m-%d",
-  "logs": "../logs/json"
+  "logs": "../logs/json",
+  "honeypot": {
+    "lat": 40.7608,
+    "lon": -111.891,
+    "label": "WebSpeare / DC801 — Salt Lake City"
+  },
+  "labMode": true,
+  "ringBuffer": 750,
+  "backfill": 300,
+  "statsIntervalSeconds": 3
 }
-
