@@ -1,0 +1,16 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8083
+  },
+  "logfile": "/tmp/cowrie.json",
+  "honeypot": {
+    "lat": 40.7128,
+    "lon": -74.006,
+    "label": "Cowrie / DO-US — New York"
+  },
+  "labMode": true,
+  "ringBuffer": 750,
+  "backfill": 300,
+  "statsIntervalSeconds": 3
+}

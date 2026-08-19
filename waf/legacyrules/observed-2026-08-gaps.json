@@ -1,0 +1,12 @@
+[
+  {
+    "_note": "── August-2026 Graylog gap review (NOT _exists_:waf bucket). The prefixed phpinfo sweep (/cpanel/phpinfo.php, /plesk/phpinfo.php, /old/phpinfo.php, ...) is now handled interactively by the broadened PHPInfoDecoy (serves a convincing fake phpinfo). This file classifies the OTHER missed category: generic single-word PHP diagnostic/recon scripts. Note: appsettings.json / config/settings.ini / rtsp:// rules already exist (observed-2026-07-gaps.json, observed-2026-h1-gaps.json) but were still in the miss bucket in August — a sensor DEPLOY lag, not a missing signature.",
+
+    "name": "PHP Diagnostic / Recon Script Probe",
+    "category": "recon:php-script",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(debug|server|status|env|sys|conf|config|adminer|phpspy|shell|cmd|i|db|dbtest)\\.php(\\?|$)",
+    "action": "log"
+  }
+]
