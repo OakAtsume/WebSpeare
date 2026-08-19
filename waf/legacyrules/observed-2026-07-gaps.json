@@ -1,0 +1,36 @@
+[
+  {
+    "_note": "── Gaps surfaced from July-2026 Graylog review of the NOT _exists_:waf bucket across both web nodes (185.177.72.0/24 secret-harvest campaign + assorted single-source probes). Detection/classification only; the interactive canary responses for the app-config/secret files live in waf/decoys/config-secrets.rb, which is registered ahead of the legacy checks so it wins on GET.",
+
+    "name": "App Config & Secret File Disclosure (.NET/Java/Python/Ruby/Node)",
+    "category": "secret-harvest:app-config",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(appsettings(\\.[a-z0-9_-]+)?\\.json|application(-[a-z0-9_-]+)?\\.(ya?ml|properties)|bootstrap(-[a-z0-9_-]+)?\\.(ya?ml|properties)|web\\.config|app\\.config|(local_|dev_|prod_)?settings\\.py|database\\.(ya?ml|sql)|secrets?\\.(ya?ml|json)|credentials(\\.json)?|config/(settings|database|secrets)\\.(ini|ya?ml|py|json))(/|$|\\?)",
+    "action": "log"
+  },
+  {
+    "name": "Runtime Debug / Introspection Endpoint (Go expvar / pprof / debugbar)",
+    "category": "info-disclosure:debug-endpoint",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(debug/vars|debug/pprof(/|$)|_debugbar/|__clockwork/|_profiler/)",
+    "action": "log"
+  },
+  {
+    "name": "Nx Witness VMS Probe (CVE-2026-60121)",
+    "category": "exploit:nx-witness:CVE-2026-60121",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)/admin/ajax/nx[-_]?zd[-_]?cve-2026-60121",
+    "action": "log"
+  },
+  {
+    "name": "Nx / Generic admin-ajax Endpoint Probe",
+    "category": "recon:admin-ajax",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/admin/ajax/(ping\\.php|[a-z0-9_-]+-cve-\\d{4}-\\d{3,7}[a-z0-9_-]*\\.(txt|json|php))",
+    "action": "log"
+  }
+]

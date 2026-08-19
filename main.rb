@@ -84,6 +84,7 @@ require_relative("waf/decoys/CVE-2025-55182")
 require_relative("waf/decoys/cPanel")
 require_relative("waf/decoys/phpunit-rce")
 require_relative("waf/decoys/upload-traversal")
+require_relative("waf/decoys/config-secrets")
 legacy = LegacyChecks.new("waf/legacyrules")
 redTailSpoofer = CVE20244577_RedTailSpoofer.new()
 phpinfoDecoy = PHPInfoDecoy.new()
@@ -91,6 +92,7 @@ react2Shell = CVE_2025_55182.new()
 cPanel = CPanelSpoofer.new()
 phpunitRce = PHPUnitRCEDecoy.new()
 uploadTraversal = UploadTraversalDecoy.new()
+configSecrets = ConfigSecretsDecoy.new()
 
 # Method for Rule Data : Priority
 firewall.register(legacy.method(:legacyChecks), 900)
@@ -100,6 +102,7 @@ firewall.register(react2Shell.method(:runCheck), 103)
 firewall.register(cPanel.method(:runCheck), 104)
 firewall.register(phpunitRce.method(:runCheck), 105)
 firewall.register(uploadTraversal.method(:runCheck), 106)
+firewall.register(configSecrets.method(:runCheck), 107)
 
 # === FIREWALL END === #
 

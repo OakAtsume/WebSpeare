@@ -14,13 +14,17 @@ class PHPInfoDecoy
     @build_date = Time.now.strftime("%b %d %Y %H:%M:%S")
   end
 
+  # phpinfo-family basenames, matched under ANY path prefix so the whole
+  # discovery sweep (/cpanel/phpinfo.php, /plesk/phpinfo.php, /old/phpinfo.php,
+  # /web/phpinfo.php, /php_info.php, ...) lands on the decoy instead of slipping
+  # past as a WAF miss. Previously only three exact paths triggered.
+  PHPINFO_BASENAME = /\A(php_?info\d*|info|test)\.(php|cgi)\z/i
+
   def runCheck(request, serverInstance)
+    path = request[:path].to_s
+    basename = path.split("?").first.to_s.split("/").last.to_s
 
-    trigger_paths = ["/phpinfo.php", "/info.php", "/test.php"]
-
-    
-
-    unless trigger_paths.include?(request[:path]) || request[:body].include?("phpinfo()")
+    unless PHPINFO_BASENAME.match?(basename) || request[:body].to_s.include?("phpinfo()")
       return {
         triggered: false,
         overwrite: false,

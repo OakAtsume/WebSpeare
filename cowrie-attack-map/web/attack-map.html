@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cowrie — SSH/Telnet Attack Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* ------------------------------------------------------------------ *
+     * Self-contained. No external fonts, tiles, or scripts. World map is  *
+     * a vector layer from /world.json drawn on a single canvas. Tuned for *
+     * Cowrie SSH/Telnet honeypot events.                                  *
+     * ------------------------------------------------------------------ */
+    :root {
+      --bg: #05060a;
+      --grid: rgba(120, 180, 255, 0.06);
+      --land: rgba(90, 150, 230, 0.15);
+      --land-line: rgba(120, 180, 255, 0.38);
+      --fg: #7fc4ff;
+      --dim: #3a5a7a;
+      --panel: rgba(4, 9, 18, 0.74);
+      --panel-border: rgba(120, 180, 255, 0.32);
+
+      --sev-critical: #ff2d4b;
+      --sev-high: #ff8c1a;
+      --sev-medium: #ffd400;
+      --sev-low: #39c6ff;
+      --sev-info: #46e0b0;
+      --sev-flag: #ff3df0;
+
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas,
+        "DejaVu Sans Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; width: 100%;
+      background: var(--bg); color: var(--fg);
+      font-family: var(--mono); overflow: hidden; letter-spacing: 0.04em;
+    }
+
+    #stage { position: fixed; inset: 0; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    #stage::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+        rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px);
+      mix-blend-mode: multiply; opacity: 0.5; z-index: 5;
+    }
+
+    .panel {
+      position: absolute; z-index: 10;
+      background: var(--panel); border: 1px solid var(--panel-border);
+      box-shadow: 0 0 18px rgba(80, 150, 255, 0.12), inset 0 0 30px rgba(80,150,255,0.03);
+      backdrop-filter: blur(2px); padding: 12px 14px; pointer-events: none;
+    }
+    .panel h2 {
+      margin: 0 0 8px 0; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.22em; color: #aad6ff; opacity: 0.85;
+      border-bottom: 1px solid rgba(120,180,255,0.18); padding-bottom: 6px;
+    }
+
+    #header { top: 16px; left: 16px; min-width: 260px; }
+    #header .title {
+      font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: #eaf4ff;
+      text-shadow: 0 0 12px rgba(120,180,255,0.5);
+    }
+    #header .title b { color: var(--fg); }
+    #header .sub { font-size: 11px; color: var(--dim); margin-top: 3px; }
+    #header .status { margin-top: 10px; font-size: 12px; display: flex; align-items: center; gap: 7px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sev-info);
+           box-shadow: 0 0 8px var(--sev-info); animation: blink 1.6s infinite; }
+    .dot.down { background: var(--sev-critical); box-shadow: 0 0 8px var(--sev-critical); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    #counters { top: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 22px; padding: 10px 22px; }
+    .counter { text-align: center; }
+    .counter .n { font-size: 26px; font-weight: 700; color: #eaf4ff;
+                  text-shadow: 0 0 10px rgba(120,180,255,0.45); line-height: 1; }
+    .counter .l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--dim); margin-top: 5px; }
+    .counter.breach .n { color: var(--sev-flag); text-shadow: 0 0 10px var(--sev-flag); }
+    .counter.dl .n { color: var(--sev-critical); text-shadow: 0 0 10px var(--sev-critical); }
+    .counter.cmd .n { color: var(--sev-high); text-shadow: 0 0 10px var(--sev-high); }
+
+    #stats { top: 16px; right: 16px; width: 250px; max-height: calc(100vh - 32px); overflow: hidden; }
+    .sevrow { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 11px; }
+    .sevrow .swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+    .sevrow .name { width: 58px; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.1em; color: #9fc2e0; }
+    .bar { flex: 1; height: 7px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; width: 0; transition: width 0.5s ease; }
+    .sevrow .cnt { width: 38px; text-align: right; color: #d8ecff; }
+
+    .toplist { margin-top: 12px; }
+    .toplist .row { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; margin: 3px 0; }
+    .toplist .row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #cfe6ff; }
+    .toplist .row span:last-child { color: var(--fg); flex: 0 0 auto; }
+    .toplist .cve { color: var(--sev-high); }
+    .toplist .cred { color: #ffd9a0; }
+
+    #alerts { position: absolute; top: 150px; left: 16px; width: 300px; z-index: 11;
+              display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .alert {
+      border-left: 3px solid var(--sev-high); background: rgba(28, 10, 2, 0.82);
+      padding: 8px 10px; font-size: 11px; box-shadow: 0 0 14px rgba(255,140,26,0.25);
+      animation: slideInL 0.35s ease-out, alertFade 9s ease-out forwards;
+    }
+    .alert.flag { border-left-color: var(--sev-flag); background: rgba(28,2,30,0.82); box-shadow: 0 0 16px rgba(255,61,240,0.3); }
+    .alert.crit { border-left-color: var(--sev-critical); background: rgba(30,2,6,0.82); box-shadow: 0 0 16px rgba(255,45,75,0.3); }
+    .alert .h { font-weight: 700; letter-spacing: 0.1em; margin-bottom: 3px; }
+    .alert .h.flag { color: var(--sev-flag); }
+    .alert .h.crit { color: var(--sev-critical); }
+    .alert .h.high { color: var(--sev-high); }
+    .alert .meta { color: #d8e4ee; line-height: 1.45; }
+    .alert .meta b { color: #fff; }
+    .alert .meta .mono { color: #ffd9a0; word-break: break-all; }
+    @keyframes slideInL { from { transform: translateX(-120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes alertFade { 0%,75%{opacity:1} 100%{opacity:0} }
+
+    #feed { bottom: 16px; left: 16px; width: min(680px, 62vw); max-height: 32vh; overflow: hidden; }
+    #feed .lines { font-size: 11.5px; line-height: 1.6; }
+    .line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: lineIn 0.3s ease-out; }
+    @keyframes lineIn { from { transform: translateX(-12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .line .t { color: #4a6f8a; margin-right: 6px; }
+    .line .sev { font-weight: 700; }
+    .line .proto { color: #6f8aa0; }
+    .line .ip { color: #7fe9ff; }
+    .line .loc { color: #ffb454; }
+    .line .ty { color: #d6ecff; }
+    .line .detail { color: #ffd9a0; }
+    .line .cve { color: var(--sev-high); font-weight: 700; }
+    .line .badge { color: var(--sev-flag); font-weight: 700; }
+
+    #legend { bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; }
+    #legend .row { display: flex; align-items: center; gap: 7px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #bdf; }
+    #legend .swatch { width: 16px; height: 3px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="stage"><canvas id="map"></canvas></div>
+
+  <div id="header" class="panel">
+    <div class="title"><b>COWRIE</b> <span style="opacity:.5">// SSH·TELNET MAP</span></div>
+    <div class="sub" id="origin-label">honeypot</div>
+    <div class="status"><span class="dot" id="link-dot"></span><span id="link-text">connecting…</span></div>
+  </div>
+
+  <div id="counters" class="panel">
+    <div class="counter"><div class="n" id="c-total">0</div><div class="l">Events</div></div>
+    <div class="counter breach"><div class="n" id="c-breach">0</div><div class="l">Breaches</div></div>
+    <div class="counter dl"><div class="n" id="c-dl">0</div><div class="l">Downloads</div></div>
+    <div class="counter cmd"><div class="n" id="c-cmd">0</div><div class="l">Commands</div></div>
+  </div>
+
+  <div id="stats" class="panel">
+    <h2>Severity</h2>
+    <div id="sevbars"></div>
+    <div class="toplist"><h2 style="margin-top:14px">Top Origins</h2><div id="top-countries"></div></div>
+    <div class="toplist"><h2 style="margin-top:14px">Top Usernames</h2><div id="top-users"></div></div>
+    <div class="toplist"><h2 style="margin-top:14px">Top Passwords</h2><div id="top-pass"></div></div>
+    <div class="toplist" id="cve-wrap"><h2 style="margin-top:14px">CVE Probes</h2><div id="top-cves"></div></div>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div id="feed" class="panel">
+    <h2>Live Feed</h2>
+    <div class="lines" id="feed-lines"></div>
+  </div>
+
+  <div id="legend" class="panel">
+    <div class="row"><span class="swatch" style="background:var(--sev-critical)"></span>Malware / Exploit</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-flag)"></span>Breach (login OK)</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-high)"></span>Command exec</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-medium)"></span>Tunnel</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-low)"></span>Login attempt</div>
+    <div class="row"><span class="swatch" style="background:var(--sev-info)"></span>Connect</div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const SEV_COLORS = {
+      critical: "#ff2d4b", high: "#ff8c1a", medium: "#ffd400",
+      low: "#39c6ff", info: "#46e0b0", flag: "#ff3df0",
+    };
+    const SEV_ORDER = ["critical", "high", "medium", "low", "info"];
+
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+
+    let world = [];
+    let origin = { lat: 40.7128, lon: -74.006, label: "honeypot" };
+    const arcs = [];
+    const pings = [];
+    const MAX_ARCS = 140;
+
+    let DPR = 1, W = 0, H = 0;
+    let mapX = 0, mapY = 0, mapW = 0, mapH = 0;
+
+    function resize() {
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      const cssW = window.innerWidth, cssH = window.innerHeight;
+      canvas.width = Math.floor(cssW * DPR);
+      canvas.height = Math.floor(cssH * DPR);
+      W = canvas.width; H = canvas.height;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      if (cssW / cssH > 2) { mapH = cssH; mapW = cssH * 2; mapX = (cssW - mapW) / 2; mapY = 0; }
+      else { mapW = cssW; mapH = cssW / 2; mapX = 0; mapY = (cssH - mapH) / 2; }
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const projX = (lon) => mapX + ((lon + 180) / 360) * mapW;
+    const projY = (lat) => mapY + ((90 - lat) / 180) * mapH;
+
+    function drawWorld() {
+      ctx.strokeStyle = getCSS("--grid"); ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let lon = -180; lon <= 180; lon += 30) { ctx.moveTo(projX(lon), mapY); ctx.lineTo(projX(lon), mapY + mapH); }
+      for (let lat = -60; lat <= 90; lat += 30) { ctx.moveTo(mapX, projY(lat)); ctx.lineTo(mapX + mapW, projY(lat)); }
+      ctx.stroke();
+
+      ctx.lineWidth = 1; ctx.strokeStyle = getCSS("--land-line"); ctx.fillStyle = getCSS("--land");
+      ctx.shadowColor = "rgba(120,180,255,0.5)"; ctx.shadowBlur = 4;
+      for (const ring of world) {
+        ctx.beginPath();
+        for (let i = 0; i < ring.length; i++) {
+          const x = projX(ring[i][0]), y = projY(ring[i][1]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    function makeArc(a) {
+      let lon1 = a.lon, lat1 = a.lat, lon2 = origin.lon, lat2 = origin.lat;
+      if (Math.abs(lon1 - lon2) > 180) { if (lon1 > lon2) lon2 += 360; else lon1 += 360; }
+      const pts = [], N = 48;
+      const mx = (lon1 + lon2) / 2, my = (lat1 + lat2) / 2;
+      const dist = Math.hypot(lon2 - lon1, lat2 - lat1);
+      const lift = Math.min(55, dist * 0.32 + 6);
+      const cLat = my + lift, cLon = mx;
+      for (let i = 0; i <= N; i++) {
+        const t = i / N, u = 1 - t;
+        pts.push([u * u * lon1 + 2 * u * t * cLon + t * t * lon2,
+                  u * u * lat1 + 2 * u * t * cLat + t * t * lat2]);
+      }
+      return pts;
+    }
+
+    function strokePolyline(pts, upto) {
+      const last = Math.max(1, Math.floor(pts.length * upto));
+      let prevX = null;
+      ctx.beginPath();
+      for (let i = 0; i < last; i++) {
+        let lon = ((pts[i][0] + 180) % 360 + 360) % 360 - 180;
+        const x = projX(lon), y = projY(pts[i][1]);
+        if (prevX !== null && Math.abs(x - prevX) > mapW / 2) ctx.moveTo(x, y);
+        else if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        prevX = x;
+      }
+      ctx.stroke();
+    }
+
+    function pointAt(pts, t) {
+      const f = Math.min(0.999, Math.max(0, t)) * (pts.length - 1);
+      const i = Math.floor(f);
+      let lon = ((pts[i][0] + 180) % 360 + 360) % 360 - 180;
+      return [projX(lon), projY(pts[i][1])];
+    }
+
+    function spawnArc(a) {
+      const color = a.flag ? SEV_COLORS.flag : (SEV_COLORS[a.severity] || SEV_COLORS.info);
+      arcs.push({ pts: makeArc(a), color, t0: performance.now(), flag: !!a.flag });
+      if (arcs.length > MAX_ARCS) arcs.shift();
+    }
+
+    const DRAW_MS = 1100, HOLD_MS = 900, FADE_MS = 2600, TOTAL = DRAW_MS + HOLD_MS + FADE_MS;
+
+    function frame(now) {
+      ctx.clearRect(0, 0, W, H);
+      drawWorld();
+
+      const ox = projX(origin.lon), oy = projY(origin.lat);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 400);
+      ctx.save();
+      ctx.shadowColor = "#ff3b3b"; ctx.shadowBlur = 16 + pulse * 10; ctx.fillStyle = "#ff5b5b";
+      ctx.beginPath(); ctx.arc(ox, oy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(255,90,90," + (0.5 + pulse * 0.4) + ")"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(ox, oy, 9 + pulse * 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+
+      for (let i = arcs.length - 1; i >= 0; i--) {
+        const arc = arcs[i], age = now - arc.t0;
+        if (age > TOTAL) { arcs.splice(i, 1); continue; }
+        const drawT = Math.min(1, age / DRAW_MS);
+        let alpha = 1;
+        if (age > DRAW_MS + HOLD_MS) alpha = 1 - (age - DRAW_MS - HOLD_MS) / FADE_MS;
+        if (!arc.hit && drawT >= 1) { arc.hit = true; pings.push({ t0: now, color: arc.color }); }
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha); ctx.strokeStyle = arc.color;
+        ctx.shadowColor = arc.color; ctx.shadowBlur = arc.flag ? 14 : 8; ctx.lineWidth = arc.flag ? 2.4 : 1.8;
+        strokePolyline(arc.pts, drawT);
+        ctx.restore();
+
+        if (drawT < 1) {
+          const [hx, hy] = pointAt(arc.pts, drawT);
+          ctx.save(); ctx.globalAlpha = Math.max(0, alpha); ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = arc.color; ctx.shadowBlur = 12;
+          ctx.beginPath(); ctx.arc(hx, hy, arc.flag ? 3.2 : 2.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        }
+
+        const [sx, sy] = pointAt(arc.pts, 0);
+        ctx.save(); ctx.globalAlpha = Math.max(0, alpha) * 0.9; ctx.fillStyle = arc.color;
+        ctx.shadowColor = arc.color; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+
+      for (let i = pings.length - 1; i >= 0; i--) {
+        const p = pings[i], age = now - p.t0, life = 900;
+        if (age > life) { pings.splice(i, 1); continue; }
+        const t = age / life;
+        ctx.save(); ctx.globalAlpha = (1 - t) * 0.8; ctx.strokeStyle = p.color; ctx.lineWidth = 2;
+        ctx.shadowColor = p.color; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(ox, oy, 4 + t * 26, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function getCSS(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+    const $ = (id) => document.getElementById(id);
+    function fmt(n) { return (n || 0).toLocaleString(); }
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
+
+    function renderStats(s) {
+      if (!s) return;
+      $("c-total").textContent = fmt(s.total);
+      $("c-breach").textContent = fmt(s.breaches);
+      $("c-dl").textContent = fmt(s.malware);
+      $("c-cmd").textContent = fmt(s.commands);
+
+      const sev = s.severity || {};
+      const max = Math.max(1, ...SEV_ORDER.map((k) => sev[k] || 0));
+      $("sevbars").innerHTML = SEV_ORDER.map((k) => `
+        <div class="sevrow">
+          <span class="swatch" style="background:${SEV_COLORS[k]}"></span>
+          <span class="name">${k}</span>
+          <span class="bar"><i style="width:${((sev[k] || 0) / max) * 100}%;background:${SEV_COLORS[k]};box-shadow:0 0 8px ${SEV_COLORS[k]}"></i></span>
+          <span class="cnt">${fmt(sev[k] || 0)}</span>
+        </div>`).join("");
+
+      $("top-countries").innerHTML = rows(s.topCountries);
+      $("top-users").innerHTML = rows(s.topUsernames, "cred");
+      $("top-pass").innerHTML = rows(s.topPasswords, "cred");
+      const cves = rows(s.topCves, "cve");
+      $("top-cves").innerHTML = cves || `<div class="row"><span style="color:var(--dim)">none observed</span></div>`;
+    }
+
+    function rows(list, cls) {
+      if (!list || !list.length) return "";
+      return list.map((r) => `<div class="row"><span class="${cls || ""}">${esc(r.name)}</span><span>${fmt(r.count)}</span></div>`).join("");
+    }
+
+    const MAX_FEED = 14;
+    function addFeed(a) {
+      const lines = $("feed-lines");
+      const color = a.flag ? SEV_COLORS.flag : (SEV_COLORS[a.severity] || SEV_COLORS.info);
+      const time = new Date(a.ts).toLocaleTimeString("en-US", { hour12: false });
+      const loc = a.lab ? "LAB" : [a.city, a.country].filter(Boolean).join("/");
+      const div = document.createElement("div");
+      div.className = "line";
+      div.innerHTML =
+        `<span class="t">[${time}]</span>` +
+        `<span class="sev" style="color:${color}">${(a.severity || "info").toUpperCase()}</span> ` +
+        (a.flag ? `<span class="badge">⚑</span> ` : "") +
+        (a.protocol ? `<span class="proto">${esc(a.protocol)}</span> ` : "") +
+        `<span class="ip">${esc(a.ip)}</span> ` +
+        `<span class="loc">(${esc(loc)})</span> ` +
+        `<span class="ty">${esc(a.type)}</span>` +
+        (a.detail ? ` <span class="detail">${esc(a.detail)}</span>` : "") +
+        (a.cve ? ` <span class="cve">${esc(a.cve)}</span>` : "");
+      lines.insertBefore(div, lines.firstChild);
+      while (lines.children.length > MAX_FEED) lines.removeChild(lines.lastChild);
+    }
+
+    const MAX_ALERTS = 4;
+    function maybeAlert(a) {
+      const big = a.flag || a.severity === "critical" || a.severity === "high";
+      if (!big) return;
+      const kind = a.flag ? "flag" : (a.severity === "critical" ? "crit" : "high");
+      const box = $("alerts");
+      const el = document.createElement("div");
+      el.className = "alert " + kind;
+      const loc = a.lab ? "Lab Network" : [a.city, a.country_name].filter(Boolean).join(", ");
+      const headline =
+        a.category === "breach" ? "CREDENTIALS ACCEPTED" :
+        a.category === "malware" ? "PAYLOAD TRANSFER" :
+        a.category === "exploit" ? "EXPLOIT ATTEMPT" :
+        a.category === "command" ? "COMMAND EXECUTION" : (a.severity || "").toUpperCase() + " EVENT";
+      el.innerHTML =
+        `<div class="h ${kind}">${headline}</div>` +
+        `<div class="meta"><b>${esc(a.ip)}</b> — ${esc(loc)} <span style="color:#789">[${esc(a.protocol || "")}]</span><br>` +
+        `${esc(a.type)}${a.cve ? " · <b>" + esc(a.cve) + "</b>" : ""}` +
+        (a.detail ? `<br><span class="mono">${esc(a.detail)}</span>` : "") + `</div>`;
+      box.insertBefore(el, box.firstChild);
+      while (box.children.length > MAX_ALERTS) box.removeChild(box.lastChild);
+      setTimeout(() => el.remove(), 9000);
+    }
+
+    function ingest(a, replay) { spawnArc(a); addFeed(a); if (!replay) maybeAlert(a); }
+    function setOrigin(o) { if (!o) return; origin = o; $("origin-label").textContent = o.label || "honeypot"; }
+    function setLink(up) {
+      $("link-dot").classList.toggle("down", !up);
+      $("link-text").textContent = up ? "live · streaming" : "reconnecting…";
+    }
+
+    let es = null, lastId = 0, backoff = 1000;
+
+    function handleRecent(payload) {
+      if (payload.origin) setOrigin(payload.origin);
+      if (payload.stats) renderStats(payload.stats);
+      const list = payload.attacks || [];
+      list.forEach((a) => { if (a.id > lastId) lastId = a.id; });
+      list.slice(-MAX_FEED).forEach((a) => addFeed(a));
+      list.slice(-24).forEach((a, i) => setTimeout(() => spawnArc(a), i * 60));
+    }
+
+    function startSSE() {
+      if (typeof EventSource === "undefined") return startPolling();
+      try { es = new EventSource("/api/stream"); } catch (e) { return startPolling(); }
+      es.addEventListener("open", () => { setLink(true); backoff = 1000; });
+      es.addEventListener("recent", (e) => handleRecent(JSON.parse(e.data)));
+      es.addEventListener("stats", (e) => renderStats(JSON.parse(e.data)));
+      es.addEventListener("attack", (e) => {
+        const a = JSON.parse(e.data);
+        if (a.id) lastId = Math.max(lastId, a.id);
+        ingest(a, false);
+      });
+      es.addEventListener("error", () => {
+        setLink(false); es.close(); es = null;
+        backoff = Math.min(backoff * 1.6, 15000);
+        setTimeout(startSSE, backoff);
+      });
+    }
+
+    function startPolling() {
+      setLink(true);
+      const tick = async () => {
+        try {
+          const d = await (await fetch("/api/recent")).json();
+          if (d.origin) setOrigin(d.origin);
+          if (d.stats) renderStats(d.stats);
+          (d.attacks || []).forEach((a) => { if (a.id > lastId) { lastId = a.id; ingest(a, false); } });
+          setLink(true);
+        } catch (e) { setLink(false); }
+      };
+      tick(); setInterval(tick, 1500);
+    }
+
+    async function boot() {
+      try { world = await (await fetch("/world.json")).json(); }
+      catch (e) { console.error("world.json failed", e); }
+      requestAnimationFrame(frame);
+
+      if (location.search.includes("shot")) {
+        try { handleRecent(await (await fetch("/api/recent")).json()); setLink(true); }
+        catch (e) { setLink(false); }
+        return;
+      }
+      startSSE();
+    }
+    boot();
+  })();
+  </script>
+</body>
+</html>
