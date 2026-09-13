@@ -8,6 +8,17 @@
     "host": "127.0.0.1",
     "port": 8081
   },
+  "serverPersona": "random",
+  "_serverPersona_note": "Which fake 'old software' banner to advertise. 'random' picks one ONCE at boot (stable for the process, so it never changes per-request like a real server); or set an integer index into serverPersonas. Old/EOL versions are chosen as lures for CVE scanners; the squid entry advertises an open proxy to draw relay-abuse.",
+  "serverPersonas": [
+    { "Server": "Apache/2.4.49 (Unix)", "X-Powered-By": "PHP/7.2.34" },
+    { "Server": "Apache/2.2.15 (CentOS)", "X-Powered-By": "PHP/5.4.45" },
+    { "Server": "nginx/1.18.0", "X-Powered-By": "PHP/7.4.3" },
+    { "Server": "nginx/1.14.0 (Ubuntu)", "X-Powered-By": "PHP/5.6.40" },
+    { "Server": "Microsoft-IIS/7.5", "X-Powered-By": "ASP.NET", "X-AspNet-Version": "2.0.50727" },
+    { "Server": "squid/3.5.27", "Via": "1.1 cache (squid/3.5.27)", "X-Cache": "MISS from cache" },
+    { "Server": "lighttpd/1.4.35", "X-Powered-By": "PHP/5.3.29" }
+  ],
   "graylog": {
     "enabled": false,
     "host": "127.0.0.1",
