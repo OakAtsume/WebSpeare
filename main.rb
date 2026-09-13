@@ -48,26 +48,48 @@ class ServerUtils
   # bait.gsub!("{{POEM}}", randomWrap(text, baits["paths"], baits["params"], baits["strings"]))
   # bait.gsub!("{{FOOTER}}", "Powered by ")
 
-  def randomWrap()
-    # puts @randomText
-    # words = @randomText["poems"].sample.split(/\b/)
-    # words = @randomText["poems"].sample.split(/\b/)
-    words = @randomText.sample.join(" ").split(/\b/)
-    words.map! do |word|
-      # if word.match?(/\w/) && rand < 0.50
-      #   "<a href=\"#{@baits["paths"].sample}\">#{word}</a>"
-      # elsif word.match?(/\w/) && rand < 0.25
-      #   "<a href=\"#{@baits["paths"].sample}?#{@baits["params"].sample}=#{@baits["paths"].sample}\">#{word}</a>"
-      # elsif word.match?(/\w/) && rand < 0.50
-      #   "#{word} <!--  #{@baits["strings"].s
-      #   ample}  -->"
-      # else
-        word
-      # end
+  # Build one deterministic-looking bait link. Paths are benign content routes
+  # (see config/baits.json) so a crawler that follows them is logged as ordinary
+  # HTTP, never flagged by the WAF — that was the whole reason the old, exploit-y
+  # bait paths had to be pulled.
+  def baitLink
+    path = @baits["paths"].sample
+    if rand < 0.35 && @baits["values"] && !@baits["values"].empty?
+      path = "#{path}?#{@baits["params"].sample}=#{@baits["values"].sample}"
     end
+    path
+  end
 
+  def randomWrap()
+    words = @randomText.sample.join(" ").split(/\b/)
 
-    return words.join("")
+    # Weave a light scatter of in-text cross-reference links through the prose.
+    # Low density so it still reads like a real anthology page (camouflage), not
+    # a link farm.
+    body = words.map do |word|
+      if word.match?(/\w/) && rand < 0.04
+        "<a href=\"#{baitLink}\">#{word}</a>"
+      else
+        word
+      end
+    end.join("")
+
+    # A subtle, realistic dev-artifact comment. This is response-only — the WAF
+    # only inspects requests, so it never trips a rule; it just makes the host
+    # read as a lived-in real site. Never anything that identifies a honeypot.
+    body += "\n<!-- #{@baits["strings"].sample} -->" if rand < 0.6
+
+    # Hidden crawler-trap fan-out. Screen-reader-clipped (a standard a11y pattern
+    # used by countless real sites → not a honeypot fingerprint), so humans never
+    # see or click these, but aggressive crawlers/scrapers follow them into an
+    # effectively endless maze of benign pages.
+    trap = Array.new(rand(5..9)) do
+      link = baitLink
+      "<a href=\"#{link}\">#{link.split("/").last.to_s.split("?").first.gsub("-", " ")}</a>"
+    end.join(" ")
+    body += "\n<div class=\"sr-only\" aria-hidden=\"true\">#{trap}</div>"
+
+    body
   end
 end
 
@@ -85,6 +107,7 @@ require_relative("waf/decoys/cPanel")
 require_relative("waf/decoys/phpunit-rce")
 require_relative("waf/decoys/upload-traversal")
 require_relative("waf/decoys/config-secrets")
+require_relative("waf/decoys/toolshell")
 legacy = LegacyChecks.new("waf/legacyrules")
 redTailSpoofer = CVE20244577_RedTailSpoofer.new()
 phpinfoDecoy = PHPInfoDecoy.new()
@@ -93,6 +116,7 @@ cPanel = CPanelSpoofer.new()
 phpunitRce = PHPUnitRCEDecoy.new()
 uploadTraversal = UploadTraversalDecoy.new()
 configSecrets = ConfigSecretsDecoy.new()
+toolShell = ToolShellDecoy.new()
 
 # Method for Rule Data : Priority
 firewall.register(legacy.method(:legacyChecks), 900)
@@ -103,8 +127,23 @@ firewall.register(cPanel.method(:runCheck), 104)
 firewall.register(phpunitRce.method(:runCheck), 105)
 firewall.register(uploadTraversal.method(:runCheck), 106)
 firewall.register(configSecrets.method(:runCheck), 107)
+firewall.register(toolShell.method(:runCheck), 108)
 
 # === FIREWALL END === #
+
+# Pick a fake "old software" banner ONCE at boot (stable for the process — a real
+# server doesn't change its Server header per request). Advertised on responses to
+# lure CVE scanners toward known-vulnerable versions; the squid entry poses as an
+# open proxy to draw relay-abuse into the logs.
+serverPersonas = config["serverPersonas"] || []
+serverHeaders =
+  if serverPersonas.empty?
+    {}
+  else
+    sel = config["serverPersona"]
+    sel.is_a?(Integer) ? (serverPersonas[sel] || serverPersonas.sample) : serverPersonas.sample
+  end
+record.log(message: "Server persona: #{serverHeaders["Server"] || "(none)"}")
 
 # Default handlers
 @server.on(:request) do |id, socket, request|
@@ -162,10 +201,11 @@ firewall.register(configSecrets.method(:runCheck), 107)
   content = utils.randomWrap()
   # finalPage = @page.gsub("{{CONTENT}}", content)
   finalPage = @page.dup
-  # finalPage.gsub!("{{TITLE}}", baits["strings"].sample)
-  finalPage.gsub!("{{TITLE}}", "ShakeSpeare Poems")
+  # Neutral, generic title/footer — no distinctive branding a fingerprinting
+  # service could signature back to this honeypot.
+  finalPage.gsub!("{{TITLE}}", "Selected Works")
   finalPage.gsub!("{{POEM}}", content)
-  finalPage.gsub!("{{FOOTER}}", "Powered By ")
+  finalPage.gsub!("{{FOOTER}}", "&copy; Selected Works")
   record.reqLogs(request)
 
   if config["backend-spoof"]["enabled"]
@@ -179,7 +219,8 @@ firewall.register(configSecrets.method(:runCheck), 107)
     @server.genReply(
       200,
       finalPage,
-      @server.mimeFor(".html")
+      @server.mimeFor(".html"),
+      serverHeaders
     )
   )
   socket.close()
