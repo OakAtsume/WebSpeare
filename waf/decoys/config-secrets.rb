@@ -29,12 +29,8 @@ require "json"
 # hardcoded defaults below are placeholders / already-public fallbacks used only
 # when canary.json is absent. See config/canary.json.example for the schema.
 #
-#  - aws.access_key_id / secret_access_key  → Path B: an "AWS keys" canarytoken
+#  - aws.access_key_id / secret_access_key  → an "AWS keys" canarytoken
 #    (canarytokens.org). Alerts the instant the key is USED anywhere against AWS.
-#  - aws_decoy_infra.*                       → Path A: references to deployed
-#    Canarytokens AWS decoy resources (S3 bucket / Secrets Manager / SSM / ...).
-#    Emitted as breadcrumbs so a harvester who pivots into AWS and touches them
-#    trips CloudTrail.
 class ConfigSecretsDecoy
   # already-public fallbacks (used only if config/canary.json is missing a value)
   DEFAULTS = {
@@ -73,25 +69,18 @@ class ConfigSecretsDecoy
     rescue => e
       warn "ConfigSecretsDecoy: could not parse #{config_path} (#{e.message}); using defaults"
     end
-    aws   = cfg["aws"]             || {}
-    infra = cfg["aws_decoy_infra"] || {}
-    db    = cfg["db"]              || {}
+    aws = cfg["aws"] || {}
+    db  = cfg["db"]  || {}
 
     @aws_key     = pick(aws["access_key_id"],     :aws_key)
     @aws_secret  = pick(aws["secret_access_key"], :aws_secret)
-    @region      = present(aws["region"]) || present(infra["region"]) || DEFAULTS[:region]
+    @region      = present(aws["region"]) || DEFAULTS[:region]
     @db_user     = pick(db["user"], :db_user)
     @db_pass     = pick(db["pass"], :db_pass)
     @db_host     = pick(db["host"], :db_host)
     @jwt         = pick(cfg["jwt_secret"], :jwt)
     @api         = pick(cfg["api_token"], :api)
     @canary_host = pick(cfg["canary_host"], :canary_host)
-
-    # Path A breadcrumbs — only emitted when present in config.
-    @account_id = present(infra["account_id"])
-    @s3_bucket  = present(infra["s3_bucket"])
-    @secret_nm  = present(infra["secret_name"])
-    @ssm_param  = present(infra["ssm_param"])
   end
 
   def runCheck(request, serverInstance)
@@ -124,23 +113,8 @@ class ConfigSecretsDecoy
     { triggered: false, overwrite: false, reason: "blank", payload: nil }
   end
 
-  # Extra AWS "breadcrumb" lines pointing at the deployed decoy infrastructure.
-  # Returned as an array of KEY=VALUE strings (dotenv) — empty if not configured.
-  def infra_env_lines
-    lines = []
-    lines << "AWS_ACCOUNT_ID=#{@account_id}"                if @account_id
-    lines << "S3_CONFIG_BUCKET=#{@s3_bucket}"               if @s3_bucket
-    lines << "S3_CONFIG_OBJECT=production_secrets.env"       if @s3_bucket
-    lines << "AWS_SECRETS_MANAGER_SECRET=#{@secret_nm}"      if @secret_nm
-    lines << "SSM_SSH_KEY_PARAM=#{@ssm_param}"               if @ssm_param
-    lines
-  end
-
   def dotnet_appsettings
     aws = { "Region" => @region, "AccessKey" => @aws_key, "SecretKey" => @aws_secret }
-    aws["ConfigBucket"]   = @s3_bucket if @s3_bucket
-    aws["SecretsManager"] = @secret_nm if @secret_nm
-    aws["AccountId"]      = @account_id if @account_id
     body = JSON.pretty_generate({
       "Logging" => { "LogLevel" => { "Default" => "Information", "Microsoft.AspNetCore" => "Warning" } },
       "AllowedHosts" => "*",
@@ -173,8 +147,6 @@ class ConfigSecretsDecoy
   end
 
   def spring_yaml
-    extra = ""
-    extra += "        bucket: #{@s3_bucket}\n" if @s3_bucket
     body = <<~YML
       spring:
         datasource:
@@ -188,8 +160,7 @@ class ConfigSecretsDecoy
             secret-key: #{@aws_secret}
           region:
             static: #{@region}
-          s3:
-      #{extra}      jwt:
+      jwt:
         secret: #{@jwt}
     YML
     [body, ".yml"]
@@ -205,7 +176,6 @@ class ConfigSecretsDecoy
       cloud.aws.region.static=#{@region}
       jwt.secret=#{@jwt}
     PROPS
-    body += "cloud.aws.s3.bucket=#{@s3_bucket}\n" if @s3_bucket
     [body, ".txt"]
   end
 
@@ -232,7 +202,7 @@ class ConfigSecretsDecoy
       AWS_ACCESS_KEY_ID = "#{@aws_key}"
       AWS_SECRET_ACCESS_KEY = "#{@aws_secret}"
       AWS_DEFAULT_REGION = "#{@region}"
-      AWS_STORAGE_BUCKET_NAME = "#{@s3_bucket || "app-prod-assets"}"
+      AWS_STORAGE_BUCKET_NAME = "app-prod-assets"
     PY
     [body, ".txt"]
   end
@@ -251,9 +221,6 @@ class ConfigSecretsDecoy
       "AWS_ACCESS_KEY_ID=#{@aws_key}",
       "AWS_SECRET_ACCESS_KEY=#{@aws_secret}",
       "AWS_DEFAULT_REGION=#{@region}",
-    ]
-    lines += infra_env_lines
-    lines += [
       "JWT_SECRET=#{@jwt}",
       "STRIPE_SECRET=#{@api}",
     ]
@@ -282,7 +249,6 @@ class ConfigSecretsDecoy
         aws_secret_access_key: #{@aws_secret}
         aws_region: #{@region}
     YML
-    body += "    aws_s3_bucket: #{@s3_bucket}\n" if @s3_bucket
     [body, ".yml"]
   end
 
