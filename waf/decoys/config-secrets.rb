@@ -12,40 +12,49 @@ require "json"
 #   :code      => Int   # only when overwrite is true
 # }
 #
-# Target: the month's dominant web campaign (e.g. 185.177.72.0/24, curl-based)
-# that force-browses for framework config and secret files —
-#   /appsettings.json  /application.yml  /application.properties  /web.config
-#   /settings.py  /.env  /database.yml  /secrets.yaml  /credentials.json ...
-# hunting DB creds, cloud keys, and SSH material.
+# Target: the dominant web campaign that force-browses for framework config and
+# secret files (/appsettings.json /.env /application.yml /web.config /settings.py
+# /database.yml /secrets.yaml /credentials.json ...) hunting DB creds, cloud keys
+# and SSH material.
 #
 # A real misconfigured server would return the file. This decoy plays along and
-# serves a believable file whose secrets are ALL CANARIES. The point is
-# attribution + waste: the scanner "wins", banks the creds, and their follow-up
-# (using those creds) either lands back in our logs or trips an external canary.
+# serves a believable file whose secrets are ALL CANARIES. The scanner "wins",
+# banks the creds, and their follow-up either lands back in our logs or trips an
+# external canary. (Proven: the fake svc_app/Pr0d_Db!7f3a9c2e pair below has been
+# replayed against our SSH sensor by 14+ IPs — confirmed harvest→reuse.)
 #
-# ── CANARIES ────────────────────────────────────────────────────────────────
-# The values below are fake. For phone-home alerting on use, replace them with
-# live tokens from canarytokens.org (AWS key token, MySQL token, custom URL
-# token) or your own listener host. The AWS id keeps the AKIA + 20-char shape so
-# it passes format validation in the attacker's tooling. Keep them recognizable
-# to YOU (grep your logs / SIEM for these strings) but plausible to them.
+# ── CANARY VALUES ────────────────────────────────────────────────────────────
+# Values are loaded at startup from config/canary.json (gitignored — real token
+# values must NOT be committed to a public repo, or the canary is burned). The
+# hardcoded defaults below are placeholders / already-public fallbacks used only
+# when canary.json is absent. See config/canary.json.example for the schema.
+#
+#  - aws.access_key_id / secret_access_key  → Path B: an "AWS keys" canarytoken
+#    (canarytokens.org). Alerts the instant the key is USED anywhere against AWS.
+#  - aws_decoy_infra.*                       → Path A: references to deployed
+#    Canarytokens AWS decoy resources (S3 bucket / Secrets Manager / SSM / ...).
+#    Emitted as breadcrumbs so a harvester who pivots into AWS and touches them
+#    trips CloudTrail.
 class ConfigSecretsDecoy
-  AWS_KEY_ID     = "AKIA5SPEARE7QH0NEYPT"          # replace w/ canarytokens.org AWS key
-  AWS_SECRET     = "wJal9SpEaReXhk/K7MDENG+bPxRfiCYHONEYcanaR"
-  DB_USER        = "svc_app"
-  DB_PASS        = "Pr0d_Db!7f3a9c2e"
-  DB_HOST        = "10.20.0.14"
-  JWT_SECRET     = "eyJprod-signing-9f2c1b7a4e6d8c05-do-not-share"
-  API_TOKEN      = "sk_live_5speare_1c9f4a7be2d6089c3f5a1b"
-  CANARY_HOST    = "vault-internal.corp-metrics.net"  # point at your canary listener
+  # already-public fallbacks (used only if config/canary.json is missing a value)
+  DEFAULTS = {
+    aws_key:     "AKIA5SPEARE7QH0NEYPT",
+    aws_secret:  "wJal9SpEaReXhk/K7MDENG+bPxRfiCYHONEYcanaR",
+    region:      "us-east-1",
+    db_user:     "svc_app",
+    db_pass:     "Pr0d_Db!7f3a9c2e",
+    db_host:     "10.20.0.14",
+    jwt:         "eyJprod-signing-9f2c1b7a4e6d8c05-do-not-share",
+    api:         "sk_live_5speare_1c9f4a7be2d6089c3f5a1b",
+    canary_host: "vault-internal.corp-metrics.net",
+  }.freeze
 
-  # basename (lowercased) => generator method
   MATCHES = {
-    "appsettings.json"        => :dotnet_appsettings,
-    "web.config"              => :dotnet_webconfig,
-    "application.yml"         => :spring_yaml,
-    "application.yaml"        => :spring_yaml,
-    "application.properties"  => :spring_properties,
+    "appsettings.json"       => :dotnet_appsettings,
+    "web.config"             => :dotnet_webconfig,
+    "application.yml"        => :spring_yaml,
+    "application.yaml"       => :spring_yaml,
+    "application.properties" => :spring_properties,
     "settings.py"            => :django_settings,
     "local_settings.py"      => :django_settings,
     ".env"                   => :dotenv,
@@ -57,20 +66,46 @@ class ConfigSecretsDecoy
     "credentials.json"       => :gcp_credentials,
   }.freeze
 
+  def initialize(config_path = "config/canary.json")
+    cfg = {}
+    begin
+      cfg = JSON.parse(File.read(config_path)) if File.exist?(config_path)
+    rescue => e
+      warn "ConfigSecretsDecoy: could not parse #{config_path} (#{e.message}); using defaults"
+    end
+    aws   = cfg["aws"]             || {}
+    infra = cfg["aws_decoy_infra"] || {}
+    db    = cfg["db"]              || {}
+
+    @aws_key     = pick(aws["access_key_id"],     :aws_key)
+    @aws_secret  = pick(aws["secret_access_key"], :aws_secret)
+    @region      = present(aws["region"]) || present(infra["region"]) || DEFAULTS[:region]
+    @db_user     = pick(db["user"], :db_user)
+    @db_pass     = pick(db["pass"], :db_pass)
+    @db_host     = pick(db["host"], :db_host)
+    @jwt         = pick(cfg["jwt_secret"], :jwt)
+    @api         = pick(cfg["api_token"], :api)
+    @canary_host = pick(cfg["canary_host"], :canary_host)
+
+    # Path A breadcrumbs — only emitted when present in config.
+    @account_id = present(infra["account_id"])
+    @s3_bucket  = present(infra["s3_bucket"])
+    @secret_nm  = present(infra["secret_name"])
+    @ssm_param  = present(infra["ssm_param"])
+  end
+
   def runCheck(request, serverInstance)
     return passthrough unless ["GET", "HEAD"].include?(request[:method])
     path = request[:path].to_s
     return passthrough if path.empty?
 
     base = path.split("?").first.to_s.split("/").last.to_s.downcase
-    # appsettings.Production.json / appsettings.Development.json etc.
     gen = MATCHES[base]
     gen ||= :dotnet_appsettings if base =~ /\Aappsettings\..+\.json\z/
     return passthrough unless gen
 
     body, ext = send(gen)
     payload = serverInstance.genReply(200, body, serverInstance.mimeFor(ext))
-
     {
       triggered: true,
       overwrite: true,
@@ -82,20 +117,39 @@ class ConfigSecretsDecoy
 
   private
 
+  def present(v) = (v && !v.to_s.strip.empty?) ? v.to_s : nil
+  def pick(v, key) = present(v) || DEFAULTS[key]
+
   def passthrough
     { triggered: false, overwrite: false, reason: "blank", payload: nil }
   end
 
+  # Extra AWS "breadcrumb" lines pointing at the deployed decoy infrastructure.
+  # Returned as an array of KEY=VALUE strings (dotenv) — empty if not configured.
+  def infra_env_lines
+    lines = []
+    lines << "AWS_ACCOUNT_ID=#{@account_id}"                if @account_id
+    lines << "S3_CONFIG_BUCKET=#{@s3_bucket}"               if @s3_bucket
+    lines << "S3_CONFIG_OBJECT=production_secrets.env"       if @s3_bucket
+    lines << "AWS_SECRETS_MANAGER_SECRET=#{@secret_nm}"      if @secret_nm
+    lines << "SSM_SSH_KEY_PARAM=#{@ssm_param}"               if @ssm_param
+    lines
+  end
+
   def dotnet_appsettings
+    aws = { "Region" => @region, "AccessKey" => @aws_key, "SecretKey" => @aws_secret }
+    aws["ConfigBucket"]   = @s3_bucket if @s3_bucket
+    aws["SecretsManager"] = @secret_nm if @secret_nm
+    aws["AccountId"]      = @account_id if @account_id
     body = JSON.pretty_generate({
       "Logging" => { "LogLevel" => { "Default" => "Information", "Microsoft.AspNetCore" => "Warning" } },
       "AllowedHosts" => "*",
       "ConnectionStrings" => {
-        "DefaultConnection" => "Server=#{DB_HOST};Database=app_prod;User Id=#{DB_USER};Password=#{DB_PASS};TrustServerCertificate=True",
+        "DefaultConnection" => "Server=#{@db_host};Database=app_prod;User Id=#{@db_user};Password=#{@db_pass};TrustServerCertificate=True",
       },
-      "Jwt" => { "Issuer" => "https://#{CANARY_HOST}", "Key" => JWT_SECRET, "ExpireMinutes" => 60 },
-      "AWS" => { "Region" => "us-east-1", "AccessKey" => AWS_KEY_ID, "SecretKey" => AWS_SECRET },
-      "Stripe" => { "SecretKey" => API_TOKEN },
+      "Jwt" => { "Issuer" => "https://#{@canary_host}", "Key" => @jwt, "ExpireMinutes" => 60 },
+      "AWS" => aws,
+      "Stripe" => { "SecretKey" => @api },
     })
     [body, ".json"]
   end
@@ -105,12 +159,13 @@ class ConfigSecretsDecoy
       <?xml version="1.0" encoding="utf-8"?>
       <configuration>
         <connectionStrings>
-          <add name="DefaultConnection" connectionString="Server=#{DB_HOST};Database=app_prod;User Id=#{DB_USER};Password=#{DB_PASS};" providerName="System.Data.SqlClient" />
+          <add name="DefaultConnection" connectionString="Server=#{@db_host};Database=app_prod;User Id=#{@db_user};Password=#{@db_pass};" providerName="System.Data.SqlClient" />
         </connectionStrings>
         <appSettings>
-          <add key="AWSAccessKey" value="#{AWS_KEY_ID}" />
-          <add key="AWSSecretKey" value="#{AWS_SECRET}" />
-          <add key="JwtSigningKey" value="#{JWT_SECRET}" />
+          <add key="AWSAccessKey" value="#{@aws_key}" />
+          <add key="AWSSecretKey" value="#{@aws_secret}" />
+          <add key="AWSRegion" value="#{@region}" />
+          <add key="JwtSigningKey" value="#{@jwt}" />
         </appSettings>
       </configuration>
     XML
@@ -118,38 +173,39 @@ class ConfigSecretsDecoy
   end
 
   def spring_yaml
+    extra = ""
+    extra += "        bucket: #{@s3_bucket}\n" if @s3_bucket
     body = <<~YML
       spring:
         datasource:
-          url: jdbc:mysql://#{DB_HOST}:3306/app_prod
-          username: #{DB_USER}
-          password: #{DB_PASS}
-        jpa:
-          hibernate:
-            ddl-auto: validate
+          url: jdbc:mysql://#{@db_host}:3306/app_prod
+          username: #{@db_user}
+          password: #{@db_pass}
       cloud:
         aws:
           credentials:
-            access-key: #{AWS_KEY_ID}
-            secret-key: #{AWS_SECRET}
+            access-key: #{@aws_key}
+            secret-key: #{@aws_secret}
           region:
-            static: us-east-1
-      jwt:
-        secret: #{JWT_SECRET}
+            static: #{@region}
+          s3:
+      #{extra}      jwt:
+        secret: #{@jwt}
     YML
     [body, ".yml"]
   end
 
   def spring_properties
-    body = <<~PROPS
-      spring.datasource.url=jdbc:mysql://#{DB_HOST}:3306/app_prod
-      spring.datasource.username=#{DB_USER}
-      spring.datasource.password=#{DB_PASS}
-      cloud.aws.credentials.access-key=#{AWS_KEY_ID}
-      cloud.aws.credentials.secret-key=#{AWS_SECRET}
-      cloud.aws.region.static=us-east-1
-      jwt.secret=#{JWT_SECRET}
+    body = +<<~PROPS
+      spring.datasource.url=jdbc:mysql://#{@db_host}:3306/app_prod
+      spring.datasource.username=#{@db_user}
+      spring.datasource.password=#{@db_pass}
+      cloud.aws.credentials.access-key=#{@aws_key}
+      cloud.aws.credentials.secret-key=#{@aws_secret}
+      cloud.aws.region.static=#{@region}
+      jwt.secret=#{@jwt}
     PROPS
+    body += "cloud.aws.s3.bucket=#{@s3_bucket}\n" if @s3_bucket
     [body, ".txt"]
   end
 
@@ -158,46 +214,50 @@ class ConfigSecretsDecoy
       # Django settings (production)
       import os
 
-      SECRET_KEY = "#{JWT_SECRET}"
+      SECRET_KEY = "#{@jwt}"
       DEBUG = False
-      ALLOWED_HOSTS = ["#{CANARY_HOST}"]
+      ALLOWED_HOSTS = ["#{@canary_host}"]
 
       DATABASES = {
           "default": {
               "ENGINE": "django.db.backends.postgresql",
               "NAME": "app_prod",
-              "USER": "#{DB_USER}",
-              "PASSWORD": "#{DB_PASS}",
-              "HOST": "#{DB_HOST}",
+              "USER": "#{@db_user}",
+              "PASSWORD": "#{@db_pass}",
+              "HOST": "#{@db_host}",
               "PORT": "5432",
           }
       }
 
-      AWS_ACCESS_KEY_ID = "#{AWS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY = "#{AWS_SECRET}"
-      AWS_STORAGE_BUCKET_NAME = "app-prod-assets"
+      AWS_ACCESS_KEY_ID = "#{@aws_key}"
+      AWS_SECRET_ACCESS_KEY = "#{@aws_secret}"
+      AWS_DEFAULT_REGION = "#{@region}"
+      AWS_STORAGE_BUCKET_NAME = "#{@s3_bucket || "app-prod-assets"}"
     PY
     [body, ".txt"]
   end
 
   def dotenv
-    body = <<~ENV
-      APP_ENV=production
-      APP_DEBUG=false
-      APP_URL=https://#{CANARY_HOST}
-      DB_CONNECTION=mysql
-      DB_HOST=#{DB_HOST}
-      DB_PORT=3306
-      DB_DATABASE=app_prod
-      DB_USERNAME=#{DB_USER}
-      DB_PASSWORD=#{DB_PASS}
-      AWS_ACCESS_KEY_ID=#{AWS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY=#{AWS_SECRET}
-      AWS_DEFAULT_REGION=us-east-1
-      JWT_SECRET=#{JWT_SECRET}
-      STRIPE_SECRET=#{API_TOKEN}
-    ENV
-    [body, ".txt"]
+    lines = [
+      "APP_ENV=production",
+      "APP_DEBUG=false",
+      "APP_URL=https://#{@canary_host}",
+      "DB_CONNECTION=mysql",
+      "DB_HOST=#{@db_host}",
+      "DB_PORT=3306",
+      "DB_DATABASE=app_prod",
+      "DB_USERNAME=#{@db_user}",
+      "DB_PASSWORD=#{@db_pass}",
+      "AWS_ACCESS_KEY_ID=#{@aws_key}",
+      "AWS_SECRET_ACCESS_KEY=#{@aws_secret}",
+      "AWS_DEFAULT_REGION=#{@region}",
+    ]
+    lines += infra_env_lines
+    lines += [
+      "JWT_SECRET=#{@jwt}",
+      "STRIPE_SECRET=#{@api}",
+    ]
+    [lines.join("\n") + "\n", ".txt"]
   end
 
   def rails_database
@@ -206,21 +266,23 @@ class ConfigSecretsDecoy
         adapter: postgresql
         encoding: unicode
         database: app_prod
-        username: #{DB_USER}
-        password: #{DB_PASS}
-        host: #{DB_HOST}
+        username: #{@db_user}
+        password: #{@db_pass}
+        host: #{@db_host}
         port: 5432
     YML
     [body, ".yml"]
   end
 
   def rails_secrets
-    body = <<~YML
+    body = +<<~YML
       production:
-        secret_key_base: #{JWT_SECRET}
-        aws_access_key_id: #{AWS_KEY_ID}
-        aws_secret_access_key: #{AWS_SECRET}
+        secret_key_base: #{@jwt}
+        aws_access_key_id: #{@aws_key}
+        aws_secret_access_key: #{@aws_secret}
+        aws_region: #{@region}
     YML
+    body += "    aws_s3_bucket: #{@s3_bucket}\n" if @s3_bucket
     [body, ".yml"]
   end
 
