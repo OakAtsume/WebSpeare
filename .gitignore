@@ -4,3 +4,7 @@ logs/*.json
 
 # Live attack captures contain raw source IPs / payloads — keep out of history
 Live-Logs/
+
+# Real canary/token values — committing them to a public repo burns the canary.
+# Use config/canary.json.example as the template; keep the real file local.
+config/canary.json

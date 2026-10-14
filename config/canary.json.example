@@ -1,0 +1,30 @@
+{
+  "_README": "Canary values for the config-secrets decoy. COPY this to config/canary.json (which is gitignored) and fill in REAL values there. NEVER commit real token values to a public repo — that burns the canary. All keys are optional; anything omitted falls back to the (already-public) placeholder in waf/decoys/config-secrets.rb.",
+
+  "aws": {
+    "_note": "PATH B — an 'AWS keys' canarytoken from canarytokens.org. Create one (type: 'AWS keys'), paste the generated key pair here. It alerts the instant the key is USED anywhere against AWS — the clean honeypot pairing (fires on reuse, like the DB cred did over SSH). Leave blank to keep the placeholder.",
+    "access_key_id": "AKIA................",
+    "secret_access_key": "........................................",
+    "region": "us-east-1"
+  },
+
+  "aws_decoy_infra": {
+    "_note": "PATH A — references to the Canarytokens AWS *decoy-infrastructure* token (the tf.zip). These are planted as breadcrumbs in the served fake configs so a harvester who pivots into your AWS account and touches a decoy resource trips CloudTrail. Requires you to `terraform apply` the bundle into the target account first. Fill from the token's decoy_vars.json.",
+    "account_id": "0000000000",
+    "region": "us-east-2",
+    "s3_bucket": "example-config-bucket-xxxx",
+    "secret_name": "example_svc_credentials",
+    "ssm_param": "ExampleServiceSshKey"
+  },
+
+  "db": {
+    "_note": "Fake DB service account planted in every served config. The user/pass pair is a tripwire — any SSH/web login attempt with it is provably sourced from this decoy.",
+    "user": "svc_app",
+    "pass": "CHANGE-ME-unique-per-deployment",
+    "host": "10.20.0.14"
+  },
+
+  "jwt_secret": "CHANGE-ME",
+  "api_token": "CHANGE-ME",
+  "canary_host": "vault-internal.example.net"
+}
