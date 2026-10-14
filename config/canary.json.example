@@ -8,15 +8,6 @@
     "region": "us-east-1"
   },
 
-  "aws_decoy_infra": {
-    "_note": "PATH A — references to the Canarytokens AWS *decoy-infrastructure* token (the tf.zip). These are planted as breadcrumbs in the served fake configs so a harvester who pivots into your AWS account and touches a decoy resource trips CloudTrail. Requires you to `terraform apply` the bundle into the target account first. Fill from the token's decoy_vars.json.",
-    "account_id": "0000000000",
-    "region": "us-east-2",
-    "s3_bucket": "example-config-bucket-xxxx",
-    "secret_name": "example_svc_credentials",
-    "ssm_param": "ExampleServiceSshKey"
-  },
-
   "db": {
     "_note": "Fake DB service account planted in every served config. The user/pass pair is a tripwire — any SSH/web login attempt with it is provably sourced from this decoy.",
     "user": "svc_app",
