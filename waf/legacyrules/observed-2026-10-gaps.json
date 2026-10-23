@@ -1,0 +1,28 @@
+[
+  {
+    "_note": "── October-2026: unflagged multi-vector RCE campaign (e.g. 130.12.180.32 / Omegatech LTD) dropping the 'Sora' Mirai variant from C2 103.170.217.170 via three vectors. Classification rules below. action:log (engine classifies; it does not hard-drop — see note in config-secrets/legacy about action being advisory).",
+
+    "name": "IoT Router RCE - apply.cgi gozila_cgi Command Injection",
+    "category": "exploit:router:apply-cgi-gozila",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)(gozila_cgi|adj_time_[a-z]+=(\\$\\(|%24%28))",
+    "action": "log"
+  },
+  {
+    "name": "PHP-CGI Argument Injection / Webshell Drop (CVE-2024-4577)",
+    "category": "exploit:php-cgi:CVE-2024-4577",
+    "level": "critical",
+    "section": ["url", "body"],
+    "regex": "(?i)(/php-cgi/php-cgi\\.exe|[-%]a?dd?\\+?allow_url_include|auto_prepend_file%3dphp%3a|auto_prepend_file=php://)",
+    "action": "log"
+  },
+  {
+    "name": "phpMyAdmin setup.php Config-Injection RCE",
+    "category": "exploit:phpmyadmin:setup-config",
+    "level": "high",
+    "section": ["url", "body"],
+    "regex": "(?i)(/(phpmyadmin/)?scripts/setup\\.php|eval%28base64_decode|auth_type%5d=config%27|auth_type\\]=config')",
+    "action": "log"
+  }
+]

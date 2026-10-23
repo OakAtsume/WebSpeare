@@ -1,0 +1,20 @@
+[
+  {
+    "_note": "── CVE-2026-109618 / CVE-2026-109619 ('php2shell', PHP core RCE, CVSS 9.2, patched 2026-10-21). Classification rules derived from the public advisory + PoC signatures (ISC SANS diary 33440; abstract.security php2shell writeup; PoC repos murrez/php2shell & eness/...). Detection/log only (engine classifies, does not hard-drop). NOTE: Graylog was unreachable when authored — NOT yet validated against observed honeypot traffic; verify the FP rate once it's back.",
+
+    "name": "PHP session.upload_progress UAF RCE (CVE-2026-109619 / php2shell)",
+    "category": "exploit:php-core:CVE-2026-109619",
+    "level": "critical",
+    "section": ["body", "url"],
+    "regex": "(?i)(PHP_SESSION_UPLOAD_PROGRESS|name=\"?PHPSESSID|(^|&)PHPSESSID=)",
+    "action": "log"
+  },
+  {
+    "name": "PHP rawkey HashTable OOM Corruption (CVE-2026-109618)",
+    "category": "exploit:php-core:CVE-2026-109618",
+    "level": "critical",
+    "section": ["body"],
+    "regex": "(?i)((^|&)[^&=]{1000,}(&|=|$)|(name|filename)=\"[^\"]{1000,})",
+    "action": "log"
+  }
+]
